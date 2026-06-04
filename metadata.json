@@ -1,0 +1,6 @@
+{
+  "name": "Chameleon",
+  "description": "AI-powered on-chain data analysis and monitoring tool for the Mantle ecosystem, featuring smart money tracking and sentiment analysis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

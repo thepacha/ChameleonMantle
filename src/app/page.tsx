@@ -577,22 +577,9 @@ export default function HomeDashboard() {
       `}</style>
 
       {/* Primary Terminal Header */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-app-border/60 pb-5">
-        <div className="flex items-center space-x-3.5 group cursor-pointer">
-          <div className="relative flex items-center justify-center p-2 bg-app-emerald/[0.08] dark:bg-app-emerald/10 border border-app-emerald/20 rounded-2xl transition-all duration-300 group-hover:bg-app-emerald/[0.12] group-hover:scale-[1.03]">
-            <ChameleonLogo className="w-7 h-7 relative z-10 text-app-emerald" animated={true} />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <h1 className="text-xl font-bold tracking-tight text-app-fg font-sans">
-                Chameleon
-              </h1>
-              <span className="text-app-emerald tracking-wide text-[10px] px-2 py-0.5 border border-app-emerald/25 bg-app-emerald/10 rounded-md font-bold uppercase select-none font-mono">
-                COMMAND CENTER
-              </span>
-            </div>
-            <p className="text-[10px] text-app-zinc-text font-semibold uppercase tracking-wider mt-0.5">Mantle Realtime Ecosystem deck</p>
-          </div>
+      <header className="flex flex-col items-center md:flex-row md:items-center justify-between gap-4 border-b border-app-border/60 pb-5 md:pb-0 h-auto md:h-[65px]">
+        <div className="flex items-center justify-center md:justify-start w-full md:w-auto h-full py-0">
+          <ChameleonLogo className="w-48 h-[50px] sm:w-[240px] sm:h-[60px] relative z-10 transition-transform duration-300 group-hover:scale-[1.02]" animated={true} />
         </div>
         
         <div className="flex flex-wrap items-center gap-4">

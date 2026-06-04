@@ -349,21 +349,12 @@ export default function Dashboard() {
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between bg-app-card border border-app-border rounded-[12px] p-2.5 lg:py-2 lg:px-5 shadow-[var(--app-shadow)] gap-4"
+        className="flex flex-col items-center lg:flex-row lg:items-center justify-between bg-app-card border border-app-border rounded-[12px] p-2.5 lg:py-0 lg:px-5 h-auto lg:h-[65px] shadow-[var(--app-shadow)] gap-4"
       >
         {/* Brand/Logo Area */}
-        <div className="flex items-center justify-between lg:justify-start gap-4">
-          <Link href="/" className="flex items-center gap-3.5 group outline-none rounded-xl">
-            <div className="p-1.5 bg-app-emerald/[0.08] dark:bg-app-emerald/15 border border-app-emerald/20 rounded-lg transition-all duration-300 shadow-inner group-hover:scale-105">
-              <ChameleonLogo className="w-6 h-6 text-app-emerald relative z-10" animated={false} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-bold text-app-fg tracking-tight text-sm group-hover:text-app-emerald transition-colors">Chameleon</h1>
-                <span className="text-[9px] bg-app-emerald/10 text-app-emerald border border-app-emerald/15 px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider">PRO v2.4</span>
-              </div>
-              <p className="text-[9px] text-app-zinc-text font-medium leading-none mt-0.5">Institutional Web3 Stream Deck</p>
-            </div>
+        <div className="flex items-center justify-center lg:justify-start w-full lg:w-auto gap-4 h-full">
+          <Link href="/" className="flex items-center justify-center group outline-none rounded-xl h-full py-0 w-full lg:w-auto">
+            <ChameleonLogo className="w-48 h-[50px] sm:w-[240px] sm:h-[60px] relative z-10 transition-transform duration-300 group-hover:scale-[1.02]" animated={false} />
           </Link>
           
           <div className="h-8 w-[1px] bg-app-border/60 hidden lg:block" />

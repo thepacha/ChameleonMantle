@@ -124,7 +124,6 @@ export default function HomeDashboard() {
   const [marketHealth, setMarketHealth] = useState(88);
   const [healthDelta, setHealthDelta] = useState(3.2);
   const [signalsFeed, setSignalsFeed] = useState(INITIAL_SIGNALS);
-  const [isMounted, setIsMounted] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -132,7 +131,6 @@ export default function HomeDashboard() {
 
   // Synchronize system dark theme across elements
   useEffect(() => {
-    setIsMounted(true);
     const storedTheme = typeof window !== 'undefined' ? localStorage.getItem('theme') : null;
     if (storedTheme === 'dark') {
       setIsDarkMode(true);
@@ -411,7 +409,7 @@ export default function HomeDashboard() {
 
   // Set up the interactive D3 Simulation for the Capital Flow Map inside svgRef
   useEffect(() => {
-    if (!isMounted || !svgRef.current || !containerRef.current) return;
+    if (!svgRef.current || !containerRef.current) return;
 
     // Use ResizeObserver to determine container sizing dynamically
     const container = containerRef.current;
@@ -550,7 +548,7 @@ export default function HomeDashboard() {
       resizeObserver.disconnect();
       simulation.stop();
     };
-  }, [nodesData, linksData, isDarkMode, isMounted]);
+  }, [nodesData, linksData, isDarkMode]);
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -927,54 +925,50 @@ export default function HomeDashboard() {
           </div>
 
           {/* Area Chart Container */}
-          <div className="flex-grow w-full h-[180px] min-h-[160px] flex items-center justify-center">
-            {isMounted ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={HEALTH_HISTORY_DATA} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
-                  <defs>
-                    <linearGradient id="glowScore" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={isDarkMode ? "#00b074" : "#00875a"} stopOpacity={0.12}/>
-                      <stop offset="95%" stopColor={isDarkMode ? "#00b074" : "#00875a"} stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="2 3" vertical={false} stroke={isDarkMode ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)"} />
-                  <XAxis 
-                    dataKey="day" 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: isDarkMode ? '#8fa396' : '#6b7280', fontSize: 9, fontWeight: 500 }}
-                    tickFormatter={(val) => val.split(' ')[1]} // simplify ticker labels
-                  />
-                  <YAxis 
-                    domain={[60, 95]}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: isDarkMode ? '#8fa396' : '#6b7280', fontSize: 9, fontWeight: 500 }}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: isDarkMode ? '#121714' : '#ffffff', 
-                      borderRadius: '12px', 
-                      border: '1px solid var(--app-border)',
-                      fontSize: '11px',
-                      fontWeight: 'bold',
-                      color: 'var(--app-fg)'
-                    }} 
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="score" 
-                    stroke={isDarkMode ? "#00b074" : "#00875a"} 
-                    strokeWidth={2.5}
-                    fillOpacity={1} 
-                    fill="url(#glowScore)" 
-                    animationDuration={1200}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="w-full h-full rounded-xl bg-black/5 dark:bg-white/5 animate-pulse" />
-            )}
+          <div className="flex-grow w-full h-[180px] min-h-[160px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={HEALTH_HISTORY_DATA} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="glowScore" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={isDarkMode ? "#00b074" : "#00875a"} stopOpacity={0.12}/>
+                    <stop offset="95%" stopColor={isDarkMode ? "#00b074" : "#00875a"} stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="2 3" vertical={false} stroke={isDarkMode ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)"} />
+                <XAxis 
+                  dataKey="day" 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: isDarkMode ? '#8fa396' : '#6b7280', fontSize: 9, fontWeight: 500 }}
+                  tickFormatter={(val) => val.split(' ')[1]} // simplify ticker labels
+                />
+                <YAxis 
+                  domain={[60, 95]}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: isDarkMode ? '#8fa396' : '#6b7280', fontSize: 9, fontWeight: 500 }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: isDarkMode ? '#121714' : '#ffffff', 
+                    borderRadius: '12px', 
+                    border: '1px solid var(--app-border)',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    color: 'var(--app-fg)'
+                  }} 
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="score" 
+                  stroke={isDarkMode ? "#00b074" : "#00875a"} 
+                  strokeWidth={2.5}
+                  fillOpacity={1} 
+                  fill="url(#glowScore)" 
+                  animationDuration={1200}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
 
           <div className="mt-2 text-[10px] text-app-zinc-text font-medium leading-relaxed">

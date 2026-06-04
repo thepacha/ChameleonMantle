@@ -12,6 +12,7 @@ import {
   Shield,
   ArrowUpRight,
   Flame,
+  CheckCircle2,
   Sun,
   Moon,
   ChevronRight,
@@ -196,8 +197,6 @@ const DEFAULT_WALLETS = [
 export default function Dashboard() {
   const [walletConnected, setWalletConnected] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
-  const [notification, setNotification] = useState<string | null>(null);
   
   // Interactive selected wallet state
   const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null);
@@ -219,9 +218,8 @@ export default function Dashboard() {
     }, 800);
   };
 
-  // Load theme preference and URL parameters safely on mount
+  // Load theme preference on mount
   useEffect(() => {
-    setIsMounted(true);
     const storedTheme = typeof window !== 'undefined' ? localStorage.getItem('theme') : null;
     if (storedTheme === 'dark') {
       setIsDarkMode(true);
@@ -229,52 +227,6 @@ export default function Dashboard() {
     } else {
       setIsDarkMode(false);
       document.documentElement.classList.remove('dark');
-    }
-
-    // Capture and apply URL Search Parameters safely client-side on mount
-    const params = new URLSearchParams(window.location.search);
-    const searchVal = params.get('search');
-    const filterVal = params.get('filter');
-    
-    if (searchVal) {
-      const matchedKey = Object.keys(WALLETS_DB).find(k => k.toLowerCase() === searchVal.toLowerCase());
-      if (matchedKey) {
-        setSelectedWalletId(matchedKey);
-        setWalletSearchText(matchedKey);
-      } else {
-        // Create custom user nodes on the fly if search parameter not inside default
-        const userWalletId = searchVal.startsWith('0x') ? searchVal.slice(0, 5) : `0x${searchVal.slice(0, 3)}`;
-        WALLETS_DB[userWalletId] = {
-          id: userWalletId,
-          dna: 'Mantle Flow Node',
-          win: '78%',
-          pnl: '+192%',
-          pnlUSD: '+$64,200',
-          full: searchVal.startsWith('0x') ? searchVal : `0x${searchVal}ee84ccaa913bdefa7ac33a109fe2c0`,
-          gasSpent: '0.45 ETH',
-          activeDays: 45,
-          allocations: [
-            { asset: 'MNT', pct: 50 },
-            { asset: 'ETH', pct: 30 },
-            { asset: 'USDC', pct: 20 }
-          ],
-          aiInsight: 'Custom routed flow node from capital flow map. Showing standard L2 activity index.',
-          explanation: 'Maintains extreme latency compliance. Primarily exits positions into L1 stables.',
-          txs: [
-            { type: 'BUY', token: 'MNT', amount: '12,500', valUSD: '$6,800', time: 'Just now', hash: '0xfa11...32d' },
-            { type: 'SELL', token: 'ETH', amount: '1.24', valUSD: '$3,800', time: '1 hour ago', hash: '0x99dc...10a' }
-          ]
-        };
-        setSelectedWalletId(userWalletId);
-        setWalletSearchText(searchVal);
-      }
-    }
-    
-    if (filterVal) {
-      const normFilter = filterVal.toUpperCase();
-      if (normFilter === 'WHALES' || normFilter === 'ARB' || normFilter === 'ALL') {
-        setAlphaFilter(normFilter as 'WHALES' | 'ARB' | 'ALL');
-      }
     }
   }, []);
 
@@ -506,8 +458,7 @@ export default function Dashboard() {
             onClick={() => {
               setWalletConnected(!walletConnected);
               if (!walletConnected) {
-                setNotification("Authorized: Dynamic MetaMask/WalletConnect address synchronized successfully.");
-                setTimeout(() => setNotification(null), 4000);
+                alert("Simulating MetaMask/WalletConnect webhook authorization. Your address is successfully synchronized client-side.");
               }
             }}
             className={cn(
@@ -1072,10 +1023,7 @@ export default function Dashboard() {
                 </div>
 
                 <div 
-                  onClick={() => {
-                    setNotification(`Mirror trade webhook initialized for address ${selectedWalletId}! Transactions will be automatically duplicated to your dashboard client link.`);
-                    setTimeout(() => setNotification(null), 5000);
-                  }}
+                  onClick={() => alert(`Webhook link generated! The Chameleon AI terminal will automatically mirror copy-trading actions of system address ${selectedWalletId} straight into your connected wallet.`)}
                   className="mt-auto mx-4 mb-4 bg-app-emerald hover:brightness-95 text-white font-bold uppercase tracking-wider text-center text-xs py-3 rounded-lg hover:opacity-90 transition-all cursor-pointer shadow-md active:scale-[0.98]"
                 >
                   Setup Automated Mirror Trade Link
@@ -1086,32 +1034,6 @@ export default function Dashboard() {
         </motion.div>
 
       </main>
-
-      {/* Floating cybernetic toast message */}
-      <AnimatePresence>
-        {notification && (
-          <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 220, damping: 20 }}
-            className="fixed bottom-6 right-6 left-6 md:left-auto md:w-[380px] bg-emerald-950/95 dark:bg-emerald-950/95 border border-emerald-500/40 text-emerald-100 p-4 rounded-xl shadow-2xl z-50 flex items-start gap-3 backdrop-blur-md"
-          >
-            <div className="p-1 px-1.5 bg-emerald-500/20 text-emerald-300 rounded font-bold font-mono text-[9px] uppercase tracking-wider select-none shrink-0 mt-0.5 animate-pulse">
-              INFO
-            </div>
-            <div className="flex-grow">
-              <p className="text-xs font-semibold leading-relaxed">{notification}</p>
-            </div>
-            <button 
-              onClick={() => setNotification(null)}
-              className="text-emerald-400 hover:text-emerald-200 transition-colors shrink-0 text-xs font-bold leading-none cursor-pointer p-0.5"
-            >
-              ✕
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

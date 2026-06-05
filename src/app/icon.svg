@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="100%" height="100%">
-  <!-- 
-    This dynamically embeds your exact SVG asset, but crops it to a perfect 
-    1:1 square. This way, we use your original logo artwork, but scale it 
-    up to fill the entire browser tab area (making it look way bigger and prominent!)
-  -->
-  <image href="https://pub-3f89eefcccc34790a13b41ee21b7427f.r2.dev/cropped-Chameleon.svg" x="0" y="-40" width="1200" height="400" />
-</svg>

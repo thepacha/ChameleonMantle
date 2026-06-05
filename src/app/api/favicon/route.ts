@@ -2,31 +2,17 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    // Fetch the client's exact SVG file from Cloudflare R2
-    const res = await fetch('https://pub-3f89eefcccc34790a13b41ee21b7427f.r2.dev/cropped-Chameleon.svg', {
+    // Fetch the client's new square Favicon.svg file from Cloudflare R2
+    const res = await fetch('https://pub-3f89eefcccc34790a13b41ee21b7427f.r2.dev/Favicon.svg', {
       next: { revalidate: 3600 } // Cache the response for 1 hour
     });
     
     if (!res.ok) {
-      throw new Error('Failed to fetch the original R2 logo');
+      throw new Error('Failed to fetch the new R2 Favicon.svg');
     }
     
     let svgText = await res.text();
     
-    // Replace the original wide viewBox (0 572.25 1500 402) with a perfect 
-    // square viewport focusing directly on the chameleon logo shape (centered at X=1293.75, Y=693.265)
-    // This allows the browser to render the chameleon icon at 100% full tab square size, 
-    // resolving the "too small/invisible" problem while preserving the original artwork.
-    const originalViewBox = 'viewBox="0 572.2499744395 1500 401.999982044"';
-    const squareViewBox = 'viewBox="1103.75 503.265 380 380"';
-    
-    if (svgText.includes(originalViewBox)) {
-      svgText = svgText.replace(originalViewBox, squareViewBox);
-    } else {
-      // Fallback robust regex check in case spacing differs slightly
-      svgText = svgText.replace(/viewBox="[^"]*"/, squareViewBox);
-    }
-
     // Set first occurrence of width and height (on the root <svg> tag) to 100% 
     // to prevent the icon from being squished or distorted in the tab bar
     svgText = svgText.replace(/width="[^"]*"/, 'width="100%"');

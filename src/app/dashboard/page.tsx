@@ -358,6 +358,24 @@ export default function Dashboard() {
           </Link>
           
           <div className="h-8 w-[1px] bg-app-border/60 hidden lg:block" />
+
+          {/* Quick Page navigation shortcut pills */}
+          <div className="hidden xl:flex items-center gap-1.5 shrink-0">
+            <Link href="/" className="border border-app-border text-app-zinc-text bg-app-bg hover:bg-app-card hover:text-app-fg px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all">
+              Home
+            </Link>
+            <button className="border border-app-emerald text-app-emerald bg-app-emerald/10 font-bold px-3 py-1.5 rounded-full text-[10px] uppercase tracking-wider transition-all">
+              Terminal
+            </button>
+            <Link href="/tracker" className="border border-app-border text-app-zinc-text bg-app-bg hover:bg-app-card hover:text-app-fg px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all">
+              Tracker
+            </Link>
+            <Link href="/narratives" className="border border-app-border text-app-zinc-text bg-app-bg hover:bg-app-card hover:text-app-fg px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all">
+              Narratives
+            </Link>
+          </div>
+
+          <div className="h-8 w-[1px] bg-app-border/60 hidden xl:block" />
         </div>
 
         {/* Global Action Engine Search Filters */}

@@ -593,6 +593,18 @@ export default function HomeDashboard() {
             >
               Smart Money Terminal
             </Link>
+            <Link 
+              href="/tracker"
+              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4.5 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
+            >
+              Smart Wallet Tracker
+            </Link>
+            <Link 
+              href="/narratives"
+              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4.5 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
+            >
+              Narrative Detector
+            </Link>
           </div>
           
           <div className="flex items-center gap-3">

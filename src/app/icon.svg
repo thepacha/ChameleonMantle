@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Definitions for gradients/effects -->
+  <defs>
+    <linearGradient id="chameleonGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00b074" />
+      <stop offset="50%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00b074" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#00b074" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Background glow to make it stand out against both light and dark backgrounds -->
+  <circle cx="256" cy="256" r="240" fill="url(#glow)" />
+
+  <!-- Chameleon Group inside a tight, centered box -->
+  <g transform="translate(48, 48) scale(0.82)">
+    <!-- Coiled spiral tail, body, head, eye, and crest -->
+    <path d="M 120,380 C 60,350 40,280 60,220 C 80,160 140,120 220,110 C 300,100 380,140 420,200 C 440,230 450,270 430,300 C 410,330 370,340 340,320 C 310,300 300,260 320,230 C 335,210 360,200 380,215 C 395,225 400,245 390,260 C 380,275 365,275 360,265" 
+          fill="none" 
+          stroke="url(#chameleonGrad)" 
+          stroke-width="34" 
+          stroke-linecap="round" 
+          stroke-linejoin="round" />
+          
+    <!-- Main Body Shell and Back Ridges -->
+    <path d="M 140,240 C 150,150 250,90 360,115 C 400,125 430,145 450,170 C 430,150 390,130 340,125 C 230,115 150,180 140,240 Z" 
+          fill="url(#chameleonGrad)" />
+
+    <!-- Sleek Ridges on the Back -->
+    <path d="M 200,110 L 210,95 L 225,110 M 250,105 L 260,90 L 275,105 M 300,110 L 310,95 L 325,110 M 350,118 L 360,103 L 375,118" 
+          stroke="url(#chameleonGrad)" 
+          stroke-width="12" 
+          stroke-linecap="round" 
+          stroke-linejoin="round" 
+          fill="none" />
+
+    <!-- Head & Snout & Crest -->
+    <path d="M 360,115 C 380,115 410,120 440,100 C 450,95 460,110 455,120 C 445,140 450,165 465,180 C 480,195 485,220 470,240 C 455,260 420,270 390,250 C 370,235 360,200 360,180 Z" 
+          fill="url(#chameleonGrad)" />
+          
+    <!-- Chameleon Crest Point (Top of Head) -->
+    <path d="M 400,110 C 410,70 435,75 440,100 Z" 
+          fill="url(#chameleonGrad)" />
+
+    <!-- Dynamic Eye (multi-ringed turret eye) -->
+    <circle cx="415" cy="175" r="28" fill="#121714" stroke="url(#chameleonGrad)" stroke-width="8" />
+    <circle cx="415" cy="175" r="14" fill="url(#chameleonGrad)" />
+    <circle cx="418" cy="172" r="5" fill="#ffffff" />
+    
+    <!-- Sleek Front Leg -->
+    <path d="M 330,240 C 340,270 350,290 340,310 C 330,320 315,310 310,300 M 340,315 C 350,325 345,335 330,335 C 320,335 315,325 325,315" 
+          fill="none" 
+          stroke="url(#chameleonGrad)" 
+          stroke-width="16" 
+          stroke-linecap="round" 
+          stroke-linejoin="round" />
+
+    <!-- Sleek Hind Leg -->
+    <path d="M 180,240 C 170,280 180,310 195,325 C 205,335 215,335 210,320 M 195,325 C 190,340 175,340 170,325" 
+          fill="none" 
+          stroke="url(#chameleonGrad)" 
+          stroke-width="16" 
+          stroke-linecap="round" 
+          stroke-linejoin="round" />
+  </g>
+</svg>

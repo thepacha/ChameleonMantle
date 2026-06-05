@@ -26,6 +26,11 @@ export async function GET() {
       // Fallback robust regex check in case spacing differs slightly
       svgText = svgText.replace(/viewBox="[^"]*"/, squareViewBox);
     }
+
+    // Set first occurrence of width and height (on the root <svg> tag) to 100% 
+    // to prevent the icon from being squished or distorted in the tab bar
+    svgText = svgText.replace(/width="[^"]*"/, 'width="100%"');
+    svgText = svgText.replace(/height="[^"]*"/, 'height="100%"');
     
     // Return with proper SVG header
     return new NextResponse(svgText, {

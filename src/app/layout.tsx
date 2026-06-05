@@ -6,7 +6,14 @@ export const metadata: Metadata = {
   title: "Chameleon AI",
   description: "Market sentiment monitor with AI analysis",
   icons: {
-    icon: "https://pub-3f89eefcccc34790a13b41ee21b7427f.r2.dev/cropped-Chameleon.svg",
+    icon: [
+      {
+        url: "/api/favicon",
+        type: "image/svg+xml",
+      },
+    ],
+    shortcut: "/api/favicon",
+    apple: "/api/favicon",
   },
 };
 
@@ -17,9 +24,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="icon" href="/api/favicon" type="image/svg+xml" />
-      </head>
       <body className="antialiased" suppressHydrationWarning>
         {children}
         <Analytics />

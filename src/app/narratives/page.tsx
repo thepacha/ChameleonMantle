@@ -469,52 +469,58 @@ export default function NarrativeDetector() {
       "min-h-screen bg-app-bg text-app-fg p-4 md:p-6 flex flex-col gap-6 transition-all duration-300",
       isDarkMode ? "dark" : "light"
     )}>
-      {/* Prime Header Block */}
+      {/* Primary Header Command Base Navigation */}
       <header className="flex flex-col items-center md:flex-row md:items-center justify-between gap-4 border-b border-app-border/60 pb-5 md:pb-0 h-auto md:h-[65px]" id="narratives-primary-header">
         <div className="flex items-center justify-center md:justify-start w-full md:w-auto h-full py-0">
           <Link href="/" className="outline-none">
-            <ChameleonLogo className="w-48 h-[50px] sm:w-[240px] sm:h-[60px] relative z-10 transition-transform duration-300 hover:scale-[1.01]" animated={true} />
+            <ChameleonLogo className="w-40 h-[42px] sm:w-[190px] sm:h-[48px] relative z-10 transition-transform duration-300 hover:scale-[1.01]" animated={true} />
           </Link>
         </div>
         
         <div className="flex flex-wrap items-center gap-4">
-          <nav className="flex items-center bg-app-card border border-app-border/80 p-1.2 rounded-full gap-1">
+          <nav className="flex items-center gap-2">
             <Link 
               href="/"
-              className="text-app-zinc-text hover:text-app-fg px-3 py-1 rounded-full text-xs font-semibold tracking-wide transition-all"
+              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
             >
-              Home
+              Home Command
+            </Link>
+            <Link 
+              href="/health"
+              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
+            >
+              Ecosystem Health
             </Link>
             <Link 
               href="/dashboard"
-              className="text-app-zinc-text hover:text-app-fg px-3 py-1 rounded-full text-xs font-semibold tracking-wide transition-all"
+              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
             >
-              Smart Money
+              Smart Money Terminal
             </Link>
             <Link 
               href="/tracker"
-              className="text-app-zinc-text hover:text-app-fg px-3 py-1 rounded-full text-xs font-semibold tracking-wide transition-all"
+              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
             >
-              Wallet Tracker
+              Smart Wallet Tracker
             </Link>
-            <span className="bg-app-emerald/10 text-app-emerald font-black px-4 py-1.2 rounded-full text-xs transition-all pointer-events-none shadow-sm">
-              Narratives
-            </span>
+            <button className="border border-app-emerald text-app-emerald bg-app-emerald/10 font-bold px-4 py-1.5 rounded-full text-xs transition-all duration-200 cursor-default" disabled>
+              Narrative Detector
+            </button>
           </nav>
           
           <div className="flex items-center gap-3">
-            {/* Theme selector */}
+            {/* Theme switcher */}
             <button 
               onClick={toggleTheme}
-              className="w-9 h-9 flex items-center justify-center rounded-xl bg-app-card border border-app-border hover:bg-app-card-hover text-app-fg transition-all active:scale-95 cursor-pointer shadow-sm"
+              className="w-8 h-8 flex items-center justify-center rounded-xl bg-app-card border border-app-border hover:bg-app-card-hover text-app-fg transition-all active:scale-95 cursor-pointer shadow-sm"
               title={isDarkMode ? "Switch to Light Theme" : "Switch to Dark Theme"}
             >
-              {isDarkMode ? <Sun className="w-4 h-4 text-amber-400 animate-pulse" /> : <Moon className="w-4 h-4 text-blue-600" />}
+              {isDarkMode ? <Sun className="w-3.5 h-3.5 text-amber-400 animate-pulse" /> : <Moon className="w-3.5 h-3.5 text-blue-600" />}
             </button>
 
-            <div className="hidden sm:flex bg-app-card border border-app-emerald/25 px-3 py-1.5 rounded-full items-center space-x-2 shadow-sm">
-              <div className="w-2 h-2 bg-app-emerald rounded-full animate-pulse"></div>
-              <span className="text-[10px] font-mono text-app-emerald uppercase tracking-wider font-bold">Forensic Link OK</span>
+            <div className="hidden sm:flex bg-app-card border border-app-emerald/25 px-2.5 py-1 rounded-full items-center space-x-1.5 shadow-sm">
+              <div className="w-1.5 h-1.5 bg-app-emerald rounded-full animate-pulse"></div>
+              <span className="text-[9px] font-mono text-app-emerald uppercase tracking-wider font-bold">Forensic Link OK</span>
             </div>
           </div>
         </div>

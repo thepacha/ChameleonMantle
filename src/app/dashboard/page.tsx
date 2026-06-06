@@ -344,43 +344,74 @@ export default function Dashboard() {
       "min-h-screen bg-app-bg text-app-fg font-sans p-4 md:p-6 flex flex-col gap-6 transition-colors duration-500",
       isDarkMode ? "dark" : "light"
     )}>
-      {/* Top Bar Header */}
-      <motion.header 
+      {/* Primary Header Command Base Navigation */}
+      <header className="flex flex-col items-center md:flex-row md:items-center justify-between gap-4 border-b border-app-border/60 pb-5 md:pb-0 h-auto md:h-[65px]" id="dashboard-header">
+        <div className="flex items-center justify-center md:justify-start w-full md:w-auto h-full py-0">
+          <Link href="/" className="outline-none">
+            <ChameleonLogo className="w-40 h-[42px] sm:w-[190px] sm:h-[48px] relative z-10 transition-transform duration-300 hover:scale-[1.01]" animated={true} />
+          </Link>
+        </div>
+        
+        <div className="flex flex-wrap items-center gap-4">
+          <nav className="flex items-center gap-2">
+            <Link 
+              href="/"
+              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
+            >
+              Home Command
+            </Link>
+            <Link 
+              href="/health"
+              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
+            >
+              Ecosystem Health
+            </Link>
+            <button className="border border-app-emerald text-app-emerald bg-app-emerald/10 font-bold px-4 py-1.5 rounded-full text-xs transition-all duration-200 cursor-default" disabled>
+              Smart Money Terminal
+            </button>
+            <Link 
+              href="/tracker"
+              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
+            >
+              Smart Wallet Tracker
+            </Link>
+            <Link 
+              href="/narratives"
+              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
+            >
+              Narrative Detector
+            </Link>
+          </nav>
+          
+          <div className="flex items-center gap-3">
+            {/* Theme switcher */}
+            <button 
+              onClick={toggleTheme}
+              className="w-8 h-8 flex items-center justify-center rounded-xl bg-app-card border border-app-border hover:bg-app-card-hover text-app-fg transition-all active:scale-95 cursor-pointer shadow-sm"
+              title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {isDarkMode ? <Sun className="w-3.5 h-3.5 text-amber-400 animate-pulse" /> : <Moon className="w-3.5 h-3.5 text-blue-600" />}
+            </button>
+
+            <div className="hidden sm:flex bg-app-card border border-app-emerald/25 px-2.5 py-1 rounded-full items-center space-x-1.5 shadow-sm">
+              <div className="w-1.5 h-1.5 bg-app-emerald rounded-full animate-pulse"></div>
+              <span className="text-[9px] font-mono text-app-emerald uppercase tracking-wider font-bold">Mantle Feed OK</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Secondary Dashboard Action Center */}
+      <motion.div 
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="flex flex-col items-center lg:flex-row lg:items-center justify-between bg-app-card border border-app-border rounded-[12px] p-2.5 lg:py-0 lg:px-5 h-auto lg:h-[65px] shadow-[var(--app-shadow)] gap-4"
+        className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4 bg-app-card border border-app-border rounded-xl p-3 shadow-sm"
+        id="dashboard-action-bar"
       >
-        {/* Brand/Logo Area */}
-        <div className="flex items-center justify-center lg:justify-start w-full lg:w-auto gap-4 h-full">
-          <Link href="/" className="flex items-center justify-center group outline-none rounded-xl h-full py-0 w-full lg:w-auto">
-            <ChameleonLogo className="w-48 h-[50px] sm:w-[240px] sm:h-[60px] relative z-10 transition-transform duration-300 group-hover:scale-[1.02]" animated={false} />
-          </Link>
-          
-          <div className="h-8 w-[1px] bg-app-border/60 hidden lg:block" />
-
-          {/* Quick Page navigation shortcut pills */}
-          <div className="hidden xl:flex items-center gap-1.5 shrink-0">
-            <Link href="/" className="border border-app-border text-app-zinc-text bg-app-bg hover:bg-app-card hover:text-app-fg px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all">
-              Home
-            </Link>
-            <button className="border border-app-emerald text-app-emerald bg-app-emerald/10 font-bold px-3 py-1.5 rounded-full text-[10px] uppercase tracking-wider transition-all">
-              Terminal
-            </button>
-            <Link href="/tracker" className="border border-app-border text-app-zinc-text bg-app-bg hover:bg-app-card hover:text-app-fg px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all">
-              Tracker
-            </Link>
-            <Link href="/narratives" className="border border-app-border text-app-zinc-text bg-app-bg hover:bg-app-card hover:text-app-fg px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all">
-              Narratives
-            </Link>
-          </div>
-
-          <div className="h-8 w-[1px] bg-app-border/60 hidden xl:block" />
-        </div>
-
         {/* Global Action Engine Search Filters */}
-        <div className="flex-1 max-w-2xl flex flex-col sm:flex-row gap-3">
-          <form onSubmit={handleWalletSearchSubmit} className="relative flex-1 group">
+        <div className="flex-1 flex flex-col sm:flex-row gap-3">
+          <form onSubmit={handleWalletSearchSubmit} className="relative flex-1 group" id="dashboard-wallet-search-form">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-app-zinc-text group-focus-within:text-app-emerald transition-colors" />
             <input 
               type="text" 
@@ -400,7 +431,7 @@ export default function Dashboard() {
             )}
           </form>
 
-          <div className="relative flex-1 group">
+          <div className="relative flex-1 group" id="dashboard-token-filter">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-app-zinc-text focus-within:text-app-emerald transition-colors" />
             <input 
               type="text" 
@@ -422,33 +453,13 @@ export default function Dashboard() {
         </div>
 
         {/* System Diagnostics & Utilities */}
-        <div className="flex items-center justify-between sm:justify-end gap-3 overflow-x-auto">
+        <div className="flex items-center justify-between sm:justify-end gap-3 flex-wrap">
           {/* Static Latency Feed */}
-          <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 bg-app-bg border border-app-border/70 rounded-lg text-[9px]">
+          <div className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 bg-app-bg border border-app-border/70 rounded-lg text-[9px]" id="dashboard-diagnostics">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span className="font-mono text-app-fg/80 font-semibold">NODE: CHAMELEON-02</span>
             <span className="text-app-zinc-text border-l border-app-border/60 pl-2">LATENCY: 5ms</span>
           </div>
-
-          {/* Theme Switcher Widget */}
-          <button 
-            onClick={toggleTheme}
-            className="w-8 h-8 flex items-center justify-center rounded-lg bg-app-bg border border-app-border hover:bg-app-card-hover text-app-fg hover:border-app-emerald/30 transition-all duration-300 shadow-sm active:scale-95 cursor-pointer"
-            aria-label="Toggle theme"
-          >
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div
-                key={isDarkMode ? 'dark' : 'light'}
-                initial={{ y: -6, opacity: 0, rotate: -45 }}
-                animate={{ y: 0, opacity: 1, rotate: 0 }}
-                exit={{ y: 6, opacity: 0, rotate: 45 }}
-                transition={{ duration: 0.12 }}
-                className="flex items-center justify-center"
-              >
-                {isDarkMode ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-zinc-500" />}
-              </motion.div>
-            </AnimatePresence>
-          </button>
 
           {/* Quick Manual Stream Refresh */}
           <button
@@ -458,6 +469,7 @@ export default function Dashboard() {
               isRefreshing && "text-app-emerald"
             )}
             title="Force refresh data node"
+            id="dashboard-refresh-btn"
           >
             <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
           </button>
@@ -476,12 +488,13 @@ export default function Dashboard() {
                 ? "bg-app-card-hover text-app-fg border border-app-border hover:bg-app-bg hover:border-app-zinc-text/35" 
                 : "bg-app-emerald text-white hover:bg-[#00704a] hover:shadow-md border border-transparent"
             )}
+            id="dashboard-connect-wallet-btn"
           >
             <Wallet className="w-3.5 h-3.5" />
             <span>{walletConnected ? '0x82c8...A41B' : 'Connect'}</span>
           </button>
         </div>
-      </motion.header>
+      </motion.div>
 
       {/* Main 4-Column Terminal Bounding Box (Set to 2x2 Grid with 16px gap) */}
       <main className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-grow overflow-hidden">

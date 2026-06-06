@@ -613,6 +613,30 @@ export default function HomeDashboard() {
             >
               Narrative Detector
             </Link>
+            <Link 
+              href="/dna"
+              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
+            >
+              Wallet DNA
+            </Link>
+            <Link 
+              href="/replay-v2"
+              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
+            >
+              Alpha Replay
+            </Link>
+            <Link 
+              href="/stats"
+              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
+            >
+              Alpha Stats
+            </Link>
+            <Link 
+              href="/performance"
+              className="border border-emerald-500/50 text-emerald-500 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/20 px-4 py-1.5 rounded-full text-xs font-black tracking-wide transition-all"
+            >
+              Validation Center
+            </Link>
           </div>
           
           <div className="flex items-center gap-3">
@@ -1001,37 +1025,53 @@ export default function HomeDashboard() {
 
           <div className="flex-grow space-y-2.5 overflow-hidden">
             {signalsFeed.slice(0, 5).map((sig, idx) => (
-              <Link 
-                href={`/dashboard?search=${sig.wallet}`}
+              <div 
                 key={idx} 
-                className="p-2.5 rounded-xl border border-app-border/80 bg-app-bg/50 hover:bg-app-card-hover transition-all flex items-center justify-between text-xs cursor-pointer group"
+                className="p-2.5 rounded-xl border border-app-border/80 bg-app-bg/50 hover:bg-app-card-hover transition-all flex flex-col gap-2.5 text-xs group"
               >
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-7 h-7 rounded-lg flex items-center justify-center border",
-                    sig.type.includes('BUY') ? "bg-emerald-500/10 text-app-emerald border-app-emerald/15" :
-                    sig.type.includes('ALERT') ? "bg-blue-500/10 text-blue-500 border-blue-500/15" :
-                    sig.type.includes('ARB') ? "bg-purple-500/10 text-purple-500 border-purple-500/15" :
-                    "bg-amber-500/10 text-amber-500 border-amber-500/15"
-                  )}>
-                    {sig.type.includes('BUY') ? <Target className="w-3.5 h-3.5" /> :
-                     sig.type.includes('ALERT') ? <Shield className="w-3.5 h-3.5" /> :
-                     sig.type.includes('ARB') ? <Cpu className="w-3.5 h-3.5" /> :
-                     <Sparkles className="w-3.5 h-3.5" />}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-7 h-7 rounded-lg flex items-center justify-center border",
+                      sig.type.includes('BUY') ? "bg-emerald-500/10 text-app-emerald border-app-emerald/15" :
+                      sig.type.includes('ALERT') ? "bg-blue-500/10 text-blue-500 border-blue-500/15" :
+                      sig.type.includes('ARB') ? "bg-purple-500/10 text-purple-500 border-purple-500/15" :
+                      "bg-amber-500/10 text-amber-500 border-amber-500/15"
+                    )}>
+                      {sig.type.includes('BUY') ? <Target className="w-3.5 h-3.5" /> :
+                       sig.type.includes('ALERT') ? <Shield className="w-3.5 h-3.5" /> :
+                       sig.type.includes('ARB') ? <Cpu className="w-3.5 h-3.5" /> :
+                       <Sparkles className="w-3.5 h-3.5" />}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-app-fg group-hover:text-app-emerald transition-colors">{sig.typeName}</span>
+                      <span className="text-[9px] text-app-zinc-text font-mono font-semibold">{sig.addressSnippet}</span>
+                    </div>
                   </div>
-                  <div className="flex flex-col">
-                    <span className="font-bold text-app-fg group-hover:text-app-emerald transition-colors">{sig.typeName}</span>
-                    <span className="text-[9px] text-app-zinc-text font-mono font-semibold">{sig.addressSnippet}</span>
+
+                  <div className="flex flex-col items-end">
+                    <span className="text-[11px] font-black font-mono text-app-fg uppercase">{sig.token}</span>
+                    <span className="text-[9px] bg-app-emerald/10 text-app-emerald font-bold font-mono px-1.5 py-0.2 rounded border border-app-emerald/15 mt-0.5">
+                      {sig.conf}% conf
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex flex-col items-end">
-                  <span className="text-[11px] font-black font-mono text-app-fg uppercase">{sig.token}</span>
-                  <span className="text-[9px] bg-app-emerald/10 text-app-emerald font-bold font-mono px-1.5 py-0.2 rounded border border-app-emerald/15 mt-0.5">
-                    {sig.conf}% conf
-                  </span>
+                <div className="flex justify-end gap-2">
+                  <Link 
+                    href={`/replay-v2?id=sig-${sig.token.toLowerCase()}-001`}
+                    className="text-[9px] font-black uppercase text-app-emerald bg-app-emerald/10 border border-app-emerald/20 px-2.5 py-1 rounded transition-all hover:bg-app-emerald/20 font-mono"
+                  >
+                    ⚡ Replay Signal
+                  </Link>
+                  <Link 
+                    href={`/dashboard?search=${sig.wallet}`}
+                    className="text-[9px] font-black uppercase text-app-zinc-text bg-app-bg border border-app-border px-2.5 py-1 rounded transition-all hover:bg-app-card-hover"
+                  >
+                    Details
+                  </Link>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         </div>

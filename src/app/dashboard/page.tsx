@@ -9,6 +9,7 @@ import {
   Zap,
   BrainCircuit,
   Clock,
+  History,
   Shield,
   ArrowUpRight,
   Flame,
@@ -381,6 +382,24 @@ export default function Dashboard() {
             >
               Narrative Detector
             </Link>
+            <Link 
+              href="/dna"
+              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
+            >
+              Wallet DNA
+            </Link>
+            <Link 
+              href="/replay-v2"
+              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
+            >
+              Alpha Replay
+            </Link>
+            <Link 
+              href="/stats"
+              className="border border-app-emerald/40 text-app-emerald bg-app-emerald/5 hover:bg-app-emerald/10 px-4 py-1.5 rounded-full text-xs font-black tracking-wide transition-all"
+            >
+              Alpha Stats ✨
+            </Link>
           </nav>
           
           <div className="flex items-center gap-3">
@@ -607,6 +626,16 @@ export default function Dashboard() {
                       </div>
                       
                       <p className="text-[13px] text-app-fg font-medium leading-relaxed">{alert.msg}</p>
+                      
+                      <div className="flex justify-end mt-2">
+                        <Link 
+                          href={`/replay-v2?id=sig-${alert.token.toLowerCase()}-001`}
+                          className="flex items-center gap-1.5 text-[10px] font-bold text-app-emerald uppercase tracking-wider bg-app-emerald/10 border border-app-emerald/20 px-2.5 py-1 rounded hover:bg-app-emerald/20 transition-all font-mono animate-pulse"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          ⚡ Replay Signal
+                        </Link>
+                      </div>
                     </div>
                   </motion.div>
                 );

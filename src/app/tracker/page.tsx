@@ -638,6 +638,24 @@ export default function SmartWalletTracker() {
             >
               Narrative Detector
             </Link>
+            <Link 
+              href="/dna"
+              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
+            >
+              Wallet DNA
+            </Link>
+            <Link 
+              href="/replay-v2"
+              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
+            >
+              Alpha Replay
+            </Link>
+            <Link 
+              href="/stats"
+              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
+            >
+              Alpha Stats ✨
+            </Link>
           </nav>
           
           <div className="flex items-center gap-3">

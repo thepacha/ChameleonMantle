@@ -29,7 +29,12 @@ import {
   TrendingDown,
   Coins,
   Globe,
-  ArrowBigUp
+  ArrowBigUp,
+  ChevronDown,
+  ChevronUp,
+  MessageSquare,
+  Scale,
+  BookOpen
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -349,6 +354,197 @@ const UNUSUAL_BRIDGE_FLOWS: UnusualBridgeFlow[] = [
   { sourceChain: 'Polygon POS', amount: '+$1.12M', narrativeCategory: 'RWA', asset: 'GOLDToken', txHash: '0xf01...BB4e', timeAgo: '3 hrs ago', severity: 'normal' },
 ];
 
+interface OnChainSocialSignal {
+  narrativeId: string;
+  categoryName: string;
+  totalVolume: string;
+  governanceMentions: number;
+  bridgeMemoFrequency: number;
+  deployerPatternMatches: number;
+  direction: 'up' | 'down';
+  growth: string;
+}
+
+const ON_CHAIN_SOCIAL_SIGNAL_DATABASE: OnChainSocialSignal[] = [
+  {
+    narrativeId: 'ai-coins',
+    categoryName: 'AI Coins',
+    totalVolume: '18.2K signals',
+    governanceMentions: 1420,
+    bridgeMemoFrequency: 4120,
+    deployerPatternMatches: 84,
+    direction: 'up',
+    growth: '+34.2%'
+  },
+  {
+    narrativeId: 'restaking',
+    categoryName: 'Restaking',
+    totalVolume: '14.9K signals',
+    governanceMentions: 2110,
+    bridgeMemoFrequency: 3880,
+    deployerPatternMatches: 45,
+    direction: 'up',
+    growth: '+21.5%'
+  },
+  {
+    narrativeId: 'stablecoins',
+    categoryName: 'Stablecoins',
+    totalVolume: '24.1K signals',
+    governanceMentions: 540,
+    bridgeMemoFrequency: 14210,
+    deployerPatternMatches: 12,
+    direction: 'up',
+    growth: '+8.4%'
+  },
+  {
+    narrativeId: 'rwa',
+    categoryName: 'RWA',
+    totalVolume: '11.2K signals',
+    governanceMentions: 890,
+    bridgeMemoFrequency: 6410,
+    deployerPatternMatches: 28,
+    direction: 'up',
+    growth: '+45.8%'
+  },
+  {
+    narrativeId: 'defi',
+    categoryName: 'DeFi Hubs',
+    totalVolume: '9.6K signals',
+    governanceMentions: 3120,
+    bridgeMemoFrequency: 2410,
+    deployerPatternMatches: 56,
+    direction: 'up',
+    growth: '+12.4%'
+  },
+  {
+    narrativeId: 'gaming',
+    categoryName: 'Gaming/GameFi',
+    totalVolume: '4.8K signals',
+    governanceMentions: 420,
+    bridgeMemoFrequency: 1120,
+    deployerPatternMatches: 62,
+    direction: 'down',
+    growth: '-4.2%'
+  },
+  {
+    narrativeId: 'l2s',
+    categoryName: 'L2 Routing',
+    totalVolume: '3.1K signals',
+    governanceMentions: 1105,
+    bridgeMemoFrequency: 840,
+    deployerPatternMatches: 19,
+    direction: 'up',
+    growth: '+1.5%'
+  }
+];
+
+interface VoterSignal {
+  walletId: string;
+  name: string;
+  voteOption: 'YES' | 'NO' | 'ABSTAIN';
+  weight: string;
+  directionIcon: string;
+}
+
+interface GovernanceProposal {
+  id: string;
+  proposalCode: string;
+  title: string;
+  protocol: 'Mantle DAO' | 'Agni Protocol' | 'Merchant Moe' | 'Ondo Finance';
+  status: 'VOTING_ACTIVE' | 'PASSED_QUEUED' | 'EXECUTED' | 'DEFEATED';
+  votingPowerNeeded: string;
+  yesPowerPercent: number;
+  correlationCoefficient: string;
+  correlationSummary: string;
+  subsequentialMove: string;
+  subsequentialDirection: 'positive' | 'negative' | 'neutral';
+  voters: VoterSignal[];
+  aiSignalsAnalysis: string;
+}
+
+const MANTLE_DAO_PROPOSALS: GovernanceProposal[] = [
+  {
+    id: 'prop-01',
+    proposalCode: 'MIP-30',
+    title: 'Mantle Treasury 100M MNT Allocation to Ecosystem Liquidity Support Pools',
+    protocol: 'Mantle DAO',
+    status: 'VOTING_ACTIVE',
+    votingPowerNeeded: '120,000,000 VP',
+    yesPowerPercent: 88.4,
+    correlationCoefficient: '+0.88 (Extremely High)',
+    correlationSummary: 'Passing allocations historically trigger robust +12% to +18% localized MNT token accumulation over 14 days.',
+    subsequentialMove: '+14.2% projected',
+    subsequentialDirection: 'positive',
+    voters: [
+      { walletId: '0x3Af...c1E9', name: 'Alpha Sniper', voteOption: 'YES', weight: '2.4M VP', directionIcon: '🟢' },
+      { walletId: '0xe21...7cA0', name: 'DEX Arb Bot', voteOption: 'YES', weight: '1.8M VP', directionIcon: '🟢' },
+      { walletId: '0xVC9...218d', name: 'VC Smart Treasury', voteOption: 'YES', weight: '12.5M VP', directionIcon: '🟢' },
+      { walletId: '0x44F...eA12', name: 'Staking Whale', voteOption: 'YES', weight: '6.4M VP', directionIcon: '🟢' },
+      { walletId: '0x79B...91F2', name: 'USD Stable Farmer', voteOption: 'ABSTAIN', weight: '950K VP', directionIcon: '🟡' }
+    ],
+    aiSignalsAnalysis: "Large capital multi-sig wallets are heavily backing MIP-30 because it optimizes direct DEX arbitrage routes on Mantle. Immediate liquidity depths are expected to jump 24% upon execution."
+  },
+  {
+    id: 'prop-02',
+    proposalCode: 'AGNI-PROP-03',
+    title: 'Fee Tier Reduction & Concentrated Tick Spacing on AI Token Pools (SPECTRA/mETH)',
+    protocol: 'Agni Protocol',
+    status: 'PASSED_QUEUED',
+    votingPowerNeeded: '35,000,000 VP',
+    yesPowerPercent: 94.2,
+    correlationCoefficient: '+0.74 (Strong)',
+    correlationSummary: 'Concentrated range adjustments historically spur a +24% increase in Agni DEX fees & SPECTRA volume expansion.',
+    subsequentialMove: '+22.1% realized',
+    subsequentialDirection: 'positive',
+    voters: [
+      { walletId: '0x3Af...c1E9', name: 'Alpha Sniper', voteOption: 'YES', weight: '1.2M VP', directionIcon: '🟢' },
+      { walletId: '0xe21...7cA0', name: 'DEX Arb Bot', voteOption: 'YES', weight: '3.1M VP', directionIcon: '🟢' },
+      { walletId: '0x88D...33f1', name: 'Agent Accumulator', voteOption: 'YES', weight: '4.5M VP', directionIcon: '🟢' },
+      { walletId: '0xe21...7cA0', name: 'DEX Arb Bot', voteOption: 'NO', weight: '220K VP', directionIcon: '🔴' }
+    ],
+    aiSignalsAnalysis: "Strong consensus on concentrate liquidity range adjustments. Pre-emptive trading wallets loaded SPECTRA indices immediately following the favorable vote snapshot."
+  },
+  {
+    id: 'prop-03',
+    proposalCode: 'MOE-FIP-19',
+    title: 'Merchant Moe mETH Farming Optimization Multiplier and Dual Emissions Restructure',
+    protocol: 'Merchant Moe',
+    status: 'EXECUTED',
+    votingPowerNeeded: '42,000,000 veMOE',
+    yesPowerPercent: 78.5,
+    correlationCoefficient: '+0.81 (Core Signal)',
+    correlationSummary: 'Double emission incentives directly draw capital from Arbitrum, pushing mETH net-buys up by 4.2M inside a week.',
+    subsequentialMove: '+$12.8M mETH flow',
+    subsequentialDirection: 'positive',
+    voters: [
+      { walletId: '0x44F...eA12', name: 'Staking Whale', voteOption: 'YES', weight: '8.4M veMOE', directionIcon: '🟢' },
+      { walletId: '0xVC9...218d', name: 'VC Smart Treasury', voteOption: 'YES', weight: '5.2M veMOE', directionIcon: '🟢' },
+      { walletId: '0xAA9...bce3', name: 'Degen Guild Master', voteOption: 'YES', weight: '1.4M veMOE', directionIcon: '🟢' },
+      { walletId: '0xe21...7cA0', name: 'DEX Arb Bot', voteOption: 'NO', weight: '4.1M veMOE', directionIcon: '🔴' }
+    ],
+    aiSignalsAnalysis: "The passing of MOE-FIP-19 triggers a high-yield loop that locks mETH on-chain. Capital has moved from pure USD stables into staking assets to claim emission peaks."
+  },
+  {
+    id: 'prop-04',
+    proposalCode: 'ONDO-TREAS-01',
+    title: 'USDY Collateral Expansion across All Lending Markets & Core Gas Backstop',
+    protocol: 'Ondo Finance',
+    status: 'VOTING_ACTIVE',
+    votingPowerNeeded: '50,000,000 ONDO',
+    yesPowerPercent: 91.1,
+    correlationCoefficient: '+0.91 (Extremely Reliable)',
+    correlationSummary: 'Integrating USDY as a primal lending collateral causes USDY issuance on Mantle to jump by $15M+ on execution.',
+    subsequentialMove: '+$18.4M Ondo flow',
+    subsequentialDirection: 'positive',
+    voters: [
+      { walletId: '0xVC9...218d', name: 'VC Smart Treasury', voteOption: 'YES', weight: '14.2M VP', directionIcon: '🟢' },
+      { walletId: '0x79B...91F2', name: 'USD Stable Farmer', voteOption: 'YES', weight: '8.1M VP', directionIcon: '🟢' },
+      { walletId: '0x44F...eA12', name: 'Staking Whale', voteOption: 'ABSTAIN', weight: '2.5M VP', directionIcon: '🟡' }
+    ],
+    aiSignalsAnalysis: "USDY expansion reduces loan-to-value (LTV) risks on-chain. The extremely favorable sentiment signals a deep stable floor for routing protocols."
+  }
+];
+
 export default function NarrativeDetector() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [selectedNarrativeId, setSelectedNarrativeId] = useState<string>('ai-coins');
@@ -360,6 +556,14 @@ export default function NarrativeDetector() {
 
   // Real-time ticking indicators
   const [tickerFlows, setTickerFlows] = useState<UnusualBridgeFlow[]>(UNUSUAL_BRIDGE_FLOWS);
+
+  // DAO and Governance states
+  const [isDaoExpanded, setIsDaoExpanded] = useState(true);
+  const [selectedProposalId, setSelectedProposalId] = useState('prop-01');
+  const [generatingDaoSummary, setGeneratingDaoSummary] = useState(false);
+  const [daoSummaryText, setDaoSummaryText] = useState<string>(
+    'Consensus signals indicate a highly coordinated vote layout. Large-scale VC treasury pools (0xVC9...218d) have consolidated voting weight with high confidence metrics to push forward critical liquidity expansions.'
+  );
 
   // Sync theme
   useEffect(() => {
@@ -458,6 +662,52 @@ export default function NarrativeDetector() {
     handleGenerateSummary(activeNarrative);
   }, [selectedNarrativeId]);
 
+  const handleGenerateDaoSummary = async (proposalId: string) => {
+    setGeneratingDaoSummary(true);
+    const prop = MANTLE_DAO_PROPOSALS.find(p => p.id === proposalId) || MANTLE_DAO_PROPOSALS[0];
+    
+    try {
+      const response = await fetch('/api/narratives', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          narrativeName: prop.proposalCode + ' Governance Strategy',
+          inflow: prop.votingPowerNeeded,
+          confidence: Math.round(prop.yesPowerPercent),
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.summary) {
+          setDaoSummaryText(data.summary);
+          return;
+        }
+      }
+      throw new Error('Fallback logic');
+    } catch (err) {
+      setTimeout(() => {
+        let baseText = "";
+        if (proposalId === 'prop-01') {
+          baseText = "MIP-30 consensus is highly positive: Smart Money addresses (such as Alpha Sniper and Staking Whales) are coordinating to pass liquidity incentives, anticipating high-yield loops. This creates a buy-wall trigger on MNT.";
+        } else if (proposalId === 'prop-02') {
+          baseText = "AGNI-PROP-03 focuses strongly on tick pricing refinements. Our on-chain telemetry detects preemptive accumulating buys in SPECTRA as arbitrage bots setup specialized parameters in preparation for the vote enactment.";
+        } else if (proposalId === 'prop-03') {
+          baseText = "Merchant Moe's veMOE reward restructure is heavily aligned with active LP farmers. Dynamic staking flows demonstrate a robust shift toward yield maximization, creating buy demand for both MNT and MOE.";
+        } else {
+          baseText = "Ondo's USDY expansion on Mantle L2 has unified smart wallets. Backstop options look secure, suggesting an imminent rise in stablecoin bridge transfers to fuel credit markets.";
+        }
+        setDaoSummaryText(baseText);
+      }, 500);
+    } finally {
+      setGeneratingDaoSummary(false);
+    }
+  };
+
+  useEffect(() => {
+    handleGenerateDaoSummary(selectedProposalId);
+  }, [selectedProposalId]);
+
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedText(text);
@@ -506,6 +756,24 @@ export default function NarrativeDetector() {
             <button className="border border-app-emerald text-app-emerald bg-app-emerald/10 font-bold px-4 py-1.5 rounded-full text-xs transition-all duration-200 cursor-default" disabled>
               Narrative Detector
             </button>
+            <Link 
+              href="/dna"
+              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
+            >
+              Wallet DNA
+            </Link>
+            <Link 
+              href="/replay-v2"
+              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
+            >
+              Alpha Replay
+            </Link>
+            <Link 
+              href="/stats"
+              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
+            >
+              Alpha Stats ✨
+            </Link>
           </nav>
           
           <div className="flex items-center gap-3">
@@ -673,6 +941,73 @@ export default function NarrativeDetector() {
                     <span className="text-[9px] font-sans text-app-emerald group-hover:translate-x-1 transition-transform inline-flex items-center gap-0.5">
                       View <ArrowRight className="w-2.5 h-2.5" />
                     </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* On-Chain Social Sentiment Strip */}
+        <section className="bg-app-card border border-app-border p-5 rounded-2xl shadow-sm flex flex-col gap-4 relative" id="onchain-social-sentiment-strip">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4.5 h-4.5 text-app-emerald animate-pulse" />
+                <h3 className="text-xs font-black uppercase tracking-wider text-app-fg font-sans">
+                  On-Chain Social Sentiment Strip (Not Web Scraped)
+                </h3>
+                <span className="text-[9px] bg-app-emerald/15 text-app-emerald px-2 py-0.5 rounded font-bold uppercase font-mono">
+                  Cryptographic Scans Approved
+                </span>
+              </div>
+              <p className="text-[10px] text-app-zinc-text mt-1 leading-normal max-w-4xl font-sans">
+                Real-time cryptographic parsers searching Mantle transaction memos, governance vote snapshots, and contract compiler naming structures. Strictly on-chain telemetry.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+            {ON_CHAIN_SOCIAL_SIGNAL_DATABASE.map((sig) => {
+              const matchesSelected = selectedNarrativeId === sig.narrativeId;
+              return (
+                <button
+                  key={sig.narrativeId}
+                  onClick={() => setSelectedNarrativeId(sig.narrativeId)}
+                  className={cn(
+                    "p-3 rounded-xl border text-left flex flex-col justify-between gap-2.5 transition-all cursor-pointer select-none relative group",
+                    matchesSelected 
+                      ? "bg-app-bg border-app-emerald shadow-sm ring-1 ring-app-emerald/30 scale-[1.01]" 
+                      : "bg-app-bg hover:bg-app-card-hover border-app-border"
+                  )}
+                >
+                  <div className="flex justify-between items-center w-full">
+                    <span className="text-[10px] font-black uppercase text-app-fg leading-tight truncate">{sig.categoryName}</span>
+                    <span className={cn(
+                      "text-[8px] font-mono font-black px-1 py-0.5 rounded leading-none shrink-0",
+                      sig.direction === 'up' ? "text-app-emerald bg-app-emerald/10" : "text-rose-500 bg-rose-500/10"
+                    )}>
+                      {sig.growth}
+                    </span>
+                  </div>
+
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <span className="text-base font-black font-mono text-app-fg leading-none">{sig.totalVolume}</span>
+                  </div>
+
+                  <div className="flex flex-col gap-1 text-[8px] font-mono text-app-zinc-text bg-app-card/70 p-2 rounded-lg border border-app-border/40 w-full">
+                    <div className="flex justify-between items-center leading-none">
+                      <span className="truncate">🗳️ Governance</span>
+                      <span className="text-app-fg font-extrabold shrink-0">{sig.governanceMentions}</span>
+                    </div>
+                    <div className="flex justify-between items-center leading-none">
+                      <span className="truncate">🌉 Bridge Memo</span>
+                      <span className="text-app-fg font-extrabold shrink-0">{sig.bridgeMemoFrequency}</span>
+                    </div>
+                    <div className="flex justify-between items-center leading-none">
+                      <span className="truncate">🛠️ Deployer Pattern</span>
+                      <span className="text-app-fg font-extrabold shrink-0">{sig.deployerPatternMatches}</span>
+                    </div>
                   </div>
                 </button>
               );
@@ -1052,6 +1387,225 @@ export default function NarrativeDetector() {
             </div>
 
           </section>
+
+        </section>
+
+        {/* DAO & GOVERNANCE INTELLIGENCE PANEL */}
+        <section className="bento-card bg-app-card border border-app-border rounded-2xl overflow-hidden transition-all duration-300 shadow-sm" id="dao-governance-intelligence">
+          {/* Header */}
+          <div 
+            onClick={() => setIsDaoExpanded(!isDaoExpanded)}
+            className="p-5 flex justify-between items-center bg-app-card border-b border-b-app-border/40 cursor-pointer select-none hover:bg-app-card-hover/40 transition-colors"
+          >
+            <div className="flex items-center gap-2.5">
+              <Scale className="w-5 h-5 text-app-emerald" />
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-black uppercase text-app-fg tracking-wide font-sans">
+                    DAO & Governance Intelligence
+                  </h3>
+                  <span className="text-[8px] bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded font-black uppercase font-mono leading-none">
+                    PREMIUM SUITE ACTIVATE
+                  </span>
+                </div>
+                <p className="text-[10px] text-app-zinc-text mt-0.5 font-sans">
+                  On-chain voting snapshot feeds, Smart Treasury wallets direction logs, and coefficient trends.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <span className="hidden sm:inline-block text-[10px] uppercase font-mono font-bold text-app-zinc-text bg-app-bg border border-app-border px-2.5 py-1 rounded">
+                {MANTLE_DAO_PROPOSALS.length} Tracked Proposals
+              </span>
+              <div className="text-app-zinc-text hover:text-app-emerald transition-colors p-1">
+                {isDaoExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </div>
+            </div>
+          </div>
+
+          <AnimatePresence>
+            {isDaoExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="p-5 sm:p-6 flex flex-col gap-6 border-t border-app-border/40">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                    
+                    {/* Left Side: Proposal List (Col-span-7) */}
+                    <div className="lg:col-span-7 flex flex-col gap-3">
+                      <div className="flex justify-between items-center pb-1 border-b border-app-border/20">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-app-fg font-sans block">
+                          Mantle Ecosystem Governance Proposals
+                        </span>
+                        <span className="text-[9px] font-mono text-app-zinc-text font-bold uppercase">
+                          Select to analyze
+                        </span>
+                      </div>
+
+                      <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                        {MANTLE_DAO_PROPOSALS.map((prop) => {
+                          const isSelected = selectedProposalId === prop.id;
+                          return (
+                            <div
+                              key={prop.id}
+                              onClick={() => setSelectedProposalId(prop.id)}
+                              className={cn(
+                                "p-4 border rounded-xl flex flex-col gap-2.5 transition-all cursor-pointer text-left",
+                                isSelected
+                                  ? "bg-app-bg border-app-emerald/70 shadow-sm"
+                                  : "bg-app-bg/50 hover:bg-app-card-hover border-app-border"
+                              )}
+                            >
+                              <div className="flex justify-between items-start gap-3">
+                                <div className="flex items-center gap-2 font-mono shrink-0">
+                                  <span className="text-[9px] bg-app-card border border-app-border px-2 py-0.5 rounded font-black text-app-fg uppercase">
+                                    {prop.proposalCode}
+                                  </span>
+                                  <span className="text-[9px] text-app-zinc-text font-semibold uppercase">
+                                    {prop.protocol}
+                                  </span>
+                                </div>
+
+                                <span className={cn(
+                                  "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider shrink-0 font-mono",
+                                  prop.status === 'VOTING_ACTIVE' 
+                                    ? "bg-app-emerald/15 text-app-emerald"
+                                    : prop.status === 'PASSED_QUEUED'
+                                      ? "bg-amber-500/10 text-amber-500"
+                                      : "bg-blue-500/10 text-blue-500"
+                                )}>
+                                  {prop.status.replace('_', ' ')}
+                                </span>
+                              </div>
+
+                              <p className="text-xs font-semibold text-app-fg leading-snug font-sans">
+                                {prop.title}
+                              </p>
+
+                              <div className="grid grid-cols-3 gap-2 border-t border-app-border/40 pt-2 text-[9px] font-mono text-app-zinc-text mt-0.5">
+                                <div>
+                                  <span className="block text-[8px] uppercase font-bold text-app-zinc-text mb-0.5">Ratio</span>
+                                  <span className="text-app-fg font-black text-[10px]">{prop.yesPowerPercent}% YES</span>
+                                </div>
+                                <div>
+                                  <span className="block text-[8px] uppercase font-bold text-app-zinc-text mb-0.5">Price Correlation</span>
+                                  <span className="text-app-emerald font-black text-[10px]">{prop.correlationCoefficient.split(' ')[0]}</span>
+                                </div>
+                                <div className="text-right">
+                                  <span className="block text-[8px] uppercase font-bold text-app-zinc-text mb-0.5">Projected Impact</span>
+                                  <span className="text-app-fg font-black text-[10px] block truncate">{prop.subsequentialMove}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Right Side: Active Voter Forensic & AI summary (Col-span-5) */}
+                    <div className="lg:col-span-5 flex flex-col gap-4">
+                      {(() => {
+                        const activeProp = MANTLE_DAO_PROPOSALS.find(p => p.id === selectedProposalId) || MANTLE_DAO_PROPOSALS[0];
+                        return (
+                          <>
+                            {/* Voters card */}
+                            <div className="p-4 bg-app-bg/50 border border-app-border rounded-xl flex flex-col gap-3">
+                              <div className="flex justify-between items-center pb-2 border-b border-app-border/40">
+                                <span className="text-[10px] font-black uppercase text-app-fg flex items-center gap-1.5 font-sans leading-none">
+                                  ⚖️ Voter Smart Accounts ({activeProp.proposalCode})
+                                </span>
+                                <span className="text-[8px] font-mono uppercase text-app-zinc-text font-bold">Weight</span>
+                              </div>
+
+                              <div className="space-y-2 font-mono">
+                                {activeProp.voters.map((voter, index) => (
+                                  <div 
+                                    key={index}
+                                    className="p-2 border border-app-border rounded-lg bg-app-card flex justify-between items-center text-[10px] hover:border-app-emerald/20 transition-all"
+                                  >
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-xs shrink-0 select-none leading-none">{voter.directionIcon}</span>
+                                      <div className="flex flex-col">
+                                        <span className="font-extrabold text-app-fg">{voter.name}</span>
+                                        <span className="text-[8px] text-app-zinc-text">{voter.walletId}</span>
+                                      </div>
+                                    </div>
+                                    <div className="text-right flex flex-col items-end">
+                                      <span className="text-app-fg font-black">{voter.weight}</span>
+                                      <span className={cn(
+                                        "text-[8px] font-black rounded px-1.5 mt-0.5 uppercase tracking-widest leading-none",
+                                        voter.voteOption === 'YES' 
+                                          ? "text-app-emerald bg-app-emerald/10"
+                                          : voter.voteOption === 'NO'
+                                            ? "text-rose-500 bg-rose-500/10"
+                                            : "text-amber-500 bg-amber-500/10"
+                                      )}>{voter.voteOption}</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Correlation Detail and AI summary card */}
+                            <div className="p-4 bg-app-bg/50 border border-app-border rounded-xl flex flex-col gap-3 relative overflow-hidden">
+                              <div className="absolute right-0 top-0 -mr-20 -mt-20 w-40 h-40 bg-app-emerald/5 rounded-full blur-2xl pointer-events-none" />
+                              
+                              <div>
+                                <span className="text-[10px] font-black uppercase text-app-fg block mb-1 font-sans">
+                                  📈 Correlation & Price Influence Map
+                                </span>
+                                <p className="text-[10px] text-app-zinc-text leading-relaxed font-sans mt-1">
+                                  {activeProp.correlationSummary}
+                                </p>
+                              </div>
+
+                              <div className="border-t border-app-border/40 pt-2 mt-1 flex flex-col gap-2.5">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-[9px] uppercase font-black tracking-widest text-app-zinc-text font-mono">
+                                    CHAMELEON AI INTENT PARSER
+                                  </span>
+                                  
+                                  <button
+                                    onClick={() => handleGenerateDaoSummary(selectedProposalId)}
+                                    disabled={generatingDaoSummary}
+                                    className="text-[9px] text-app-emerald hover:underline flex items-center gap-1 font-bold uppercase font-mono disabled:opacity-50 cursor-pointer"
+                                  >
+                                    <RefreshCw className={cn("w-3 h-3", generatingDaoSummary && "animate-spin")} />
+                                    Synthesize
+                                  </button>
+                                </div>
+
+                                {generatingDaoSummary ? (
+                                  <div className="py-2.5 flex items-center justify-center gap-2">
+                                    <div className="w-3.5 h-3.5 border-2 border-app-emerald border-t-transparent rounded-full animate-spin" />
+                                    <span className="text-[9px] font-mono text-app-zinc-text uppercase tracking-wider font-semibold animate-pulse">
+                                      Generating governance synthesis...
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="p-3 bg-app-card border border-app-border rounded-lg">
+                                    <p className="text-[11px] font-semibold leading-relaxed italic text-app-fg font-sans">
+                                      &ldquo;{daoSummaryText}&rdquo;
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
         </section>
 

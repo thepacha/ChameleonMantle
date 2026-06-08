@@ -215,9 +215,22 @@ export function Header({ isDarkMode, toggleTheme, dateRangeText = "01 Apr, 2026 
               className="fixed inset-y-0 left-0 w-[280px] bg-[var(--bg-card)] border-r border-[var(--border)] p-5 z-50 md:hidden flex flex-col gap-6"
             >
               <div className="flex items-center justify-between pb-4 border-b border-[var(--border)]">
-                <span className="font-sans font-extrabold text-[15px] tracking-wide text-[var(--text-primary)]">
-                  CHAMELEON NAV
-                </span>
+                <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center hover:opacity-90 transition-opacity">
+                  <div className="relative w-[110px] h-8 flex items-center justify-center">
+                    <img
+                      src="https://pub-3f89eefcccc34790a13b41ee21b7427f.r2.dev/cropped-Chameleon.svg"
+                      alt="Chameleon Logo Bright"
+                      className="w-full h-full object-contain block dark:hidden"
+                      referrerPolicy="no-referrer"
+                    />
+                    <img
+                      src="https://pub-3f89eefcccc34790a13b41ee21b7427f.r2.dev/cropped-Chameleon%20-%20BLACK%20BACKGROUND.svg"
+                      alt="Chameleon Logo Dark"
+                      className="w-full h-full object-contain hidden dark:block"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                </Link>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
                   className="w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"

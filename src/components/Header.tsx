@@ -44,11 +44,11 @@ export function Header({ isDarkMode, toggleTheme, dateRangeText = "01 Apr, 2026 
 
   return (
     <>
-      <header className="h-[64px] shrink-0 w-full bg-[var(--bg-base)] border-b border-[var(--border)] px-4 md:px-8 flex items-center justify-between z-40 relative select-none">
+      <header className="h-[64px] shrink-0 w-full bg-[var(--bg-base)] border-b border-[var(--border)] px-3 sm:px-6 md:px-8 flex items-center justify-between z-40 relative select-none">
         {/* LEFT - Brand & Logo */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Link href="/" className="flex items-center hover:opacity-90 transition-opacity">
-            <div className="relative w-36 h-9 flex items-center justify-center">
+            <div className="relative w-[110px] sm:w-[144px] h-8 sm:h-9 flex items-center justify-center">
               <img
                 src="https://pub-3f89eefcccc34790a13b41ee21b7427f.r2.dev/cropped-Chameleon.svg"
                 alt="Chameleon Logo Bright"
@@ -147,7 +147,7 @@ export function Header({ isDarkMode, toggleTheme, dateRangeText = "01 Apr, 2026 
         </nav>
 
         {/* RIGHT - Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           {/* Theme Toggle Button */}
           <button
             onClick={toggleTheme}
@@ -166,10 +166,22 @@ export function Header({ isDarkMode, toggleTheme, dateRangeText = "01 Apr, 2026 
           {/* Connect Wallet Button */}
           <button
             onClick={() => setWalletConnected(!walletConnected)}
-            className="bg-[#10B981] hover:brightness-[1.1] text-[#080B10] font-sans font-semibold rounded-lg px-4 py-1.5 text-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+            className="bg-[#10B981] hover:brightness-[1.1] text-[#080B10] font-sans font-semibold rounded-lg px-2 sm:px-4 py-1.5 text-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1 sm:gap-1.5"
           >
             <Wallet className="w-3.5 h-3.5" />
-            <span>{walletConnected ? "0x7bf...c32" : "Connect Wallet"}</span>
+            <span>
+              {walletConnected ? (
+                <>
+                  <span className="hidden xs:inline">0x7bf...c32</span>
+                  <span className="inline xs:hidden">0x7bf...</span>
+                </>
+              ) : (
+                <>
+                  <span className="hidden xs:inline">Connect Wallet</span>
+                  <span className="inline xs:hidden">Connect</span>
+                </>
+              )}
+            </span>
           </button>
 
           {/* Mobile Menu trigger button */}
@@ -265,11 +277,25 @@ export function Header({ isDarkMode, toggleTheme, dateRangeText = "01 Apr, 2026 
 
               {/* Mobile Drawer Bottom Info */}
               <div className="border-t border-[var(--border)] pt-4 flex flex-col gap-2.5">
+                {/* Mobile Drawer Connect Wallet CTA */}
+                <div className="flex flex-col gap-1.5 mb-1 bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl p-3">
+                  <span className="text-[9px] uppercase font-bold tracking-wider text-[var(--app-muted)]">
+                    Identity
+                  </span>
+                  <button
+                    onClick={() => setWalletConnected(!walletConnected)}
+                    className="w-full bg-[#10B981] hover:brightness-[1.1] text-[#080B10] font-sans font-semibold rounded-lg py-2 text-xs transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Wallet className="w-3.5 h-3.5" />
+                    <span>{walletConnected ? "0x7bf...c32 (Connected)" : "Connect Wallet"}</span>
+                  </button>
+                </div>
+
                 <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
                   <span>Theme State</span>
                   <button
                     onClick={toggleTheme}
-                    className="flex items-center gap-1.5 bg-[var(--bg-surface)] border border-[var(--border)] rounded px-2.5 py-1"
+                    className="flex items-center gap-1.5 bg-[var(--bg-surface)] border border-[var(--border)] rounded px-2.5 py-1 cursor-pointer"
                   >
                     {isDarkMode ? <Sun className="w-3.5 h-3.5 text-amber-500" /> : <Moon className="w-3.5 h-3.5 text-blue-500" />}
                     <span>{isDarkMode ? "Dark" : "Light"}</span>

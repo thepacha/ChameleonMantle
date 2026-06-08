@@ -122,7 +122,7 @@ const ANOMALY_TICKERS = [
 ];
 
 export default function HomeDashboard() {
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [copied, setCopied] = useState(false);
   const [activeNode, setActiveNode] = useState<GraphNode | null>(null);
   const [tickerLogs, setTickerLogs] = useState(ANOMALY_TICKERS);
@@ -138,12 +138,12 @@ export default function HomeDashboard() {
   // Synchronize system theme
   useEffect(() => {
     const storedTheme = typeof window !== 'undefined' ? localStorage.getItem('theme') : null;
-    if (storedTheme === 'light') {
-      setIsDarkMode(false);
-      document.documentElement.classList.remove('dark');
-    } else {
+    if (storedTheme === 'dark') {
       setIsDarkMode(true);
       document.documentElement.classList.add('dark');
+    } else {
+      setIsDarkMode(false);
+      document.documentElement.classList.remove('dark');
     }
   }, []);
 

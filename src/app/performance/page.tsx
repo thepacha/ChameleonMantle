@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ShieldCheck, Info, Copy, Sun, Moon } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
@@ -14,6 +14,30 @@ import { OnChainProof } from '@/src/components/performance/OnChainProof';
 export default function PerformanceValidationCenter() {
   const [isDark, setIsDark] = useState(false); // Default to white theme (isDark = false)
 
+  // Synchronize System theme
+  useEffect(() => {
+    const storedTheme = typeof window !== 'undefined' ? localStorage.getItem('theme') : null;
+    if (storedTheme === 'dark') {
+      setIsDark(true);
+      document.documentElement.classList.add('dark');
+    } else {
+      setIsDark(false);
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const nextMode = !isDark;
+    setIsDark(nextMode);
+    if (nextMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
+
   return (
     <div className={cn(
       "min-h-screen flex flex-col font-sans relative transition-colors duration-250",
@@ -21,7 +45,7 @@ export default function PerformanceValidationCenter() {
     )}>
       
       {/* Unified Header */}
-      <Header isDarkMode={isDark} toggleTheme={() => setIsDark(!isDark)} />
+      <Header isDarkMode={isDark} toggleTheme={toggleTheme} />
 
       {/* SUB HEADER AUDIT CALLOUT */}
       <div className={cn(

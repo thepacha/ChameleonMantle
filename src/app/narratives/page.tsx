@@ -567,8 +567,14 @@ export default function NarrativeDetector() {
 
   // Sync theme
   useEffect(() => {
-    const isDark = document.documentElement.classList.contains('dark');
-    setIsDarkMode(isDark);
+    const storedTheme = typeof window !== 'undefined' ? localStorage.getItem('theme') : null;
+    if (storedTheme === 'dark') {
+      setIsDarkMode(true);
+      document.documentElement.classList.add('dark');
+    } else {
+      setIsDarkMode(false);
+      document.documentElement.classList.remove('dark');
+    }
 
     // Dynamic stream builder for real-time unusual bridge flows simulation
     const streamInterval = setInterval(() => {

@@ -337,6 +337,9 @@ export default function WalletDnaPage() {
     if (stored === 'dark') {
       setIsDarkMode(true);
       document.documentElement.classList.add('dark');
+    } else {
+      setIsDarkMode(false);
+      document.documentElement.classList.remove('dark');
     }
     
     const savedRecents = localStorage.getItem('chameleon_recent_searches');

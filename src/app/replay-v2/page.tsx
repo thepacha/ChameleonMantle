@@ -41,6 +41,7 @@ import {
   Flame,
   Check
 } from 'lucide-react';
+import { Header } from '@/src/components/Header';
 import { ChameleonLogo } from '@/src/components/ChameleonLogo';
 import { 
   AreaChart, 
@@ -228,36 +229,8 @@ function ReplayContentV2() {
       "min-h-screen bg-app-bg text-app-fg p-4 md:p-6 flex flex-col gap-6 transition-colors duration-300",
       isDarkMode ? "dark" : ""
     )}>
-      {/* Premium Navigation Header */}
-      <header className="flex flex-col items-center md:flex-row md:items-center justify-between gap-4 border-b border-app-border/60 pb-5 md:pb-0 h-auto md:h-[65px]">
-        <div className="flex items-center justify-center md:justify-start w-full md:w-auto h-full">
-          <Link href="/" className="outline-none flex items-center gap-3">
-            <ChameleonLogo className="w-40 h-[42px] relative z-10 transition-transform duration-300 hover:scale-[1.01]" animated={true} />
-            <div className="bg-app-emerald/15 text-app-emerald text-[9px] font-mono px-2 py-0.5 rounded-full border border-app-emerald/20 font-black tracking-widest uppercase">
-              V2 PREMIUM
-            </div>
-          </Link>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-4">
-          <nav className="flex items-center gap-2">
-            <Link href="/" className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold transition-all">Home</Link>
-            <Link href="/dashboard" className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold transition-all">Terminal</Link>
-            <button className="border border-app-emerald text-app-emerald bg-app-emerald/10 font-black px-4 py-1.5 rounded-full text-xs cursor-default">Alpha Replay</button>
-            <Link href="/stats" className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold transition-all">Alpha Stats ✨</Link>
-          </nav>
-          
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={toggleTheme}
-              className="w-8 h-8 flex items-center justify-center rounded-xl bg-app-card border border-app-border hover:bg-app-card-hover text-app-fg transition-all active:scale-95 shadow-sm"
-              title="Toggle theme"
-            >
-              {isDarkMode ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-blue-600" />}
-            </button>
-          </div>
-        </div>
-      </header>
+      {/* Unified Header */}
+      <Header isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
 
       {/* Hero Control Console */}
       <div className="flex flex-col xl:flex-row gap-4 items-stretch">

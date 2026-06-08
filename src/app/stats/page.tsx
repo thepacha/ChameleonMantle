@@ -34,6 +34,7 @@ import {
   Cpu,
   Database
 } from 'lucide-react';
+import { Header } from '@/src/components/Header';
 import { ChameleonLogo } from '@/src/components/ChameleonLogo';
 import { 
   ScatterChart, 
@@ -795,80 +796,8 @@ export default function AlphaStatsPage() {
       "min-h-screen bg-app-bg text-app-fg selection:bg-emerald-500/30 p-4 md:p-6 flex flex-col gap-6 transition-all duration-300",
       isDarkMode ? "dark" : "light"
     )}>
-      {/* Primary Header Command Base Navigation */}
-      <header className="flex flex-col items-center md:flex-row md:items-center justify-between gap-4 border-b border-app-border/60 pb-5 md:pb-0 h-auto md:h-[65px]">
-        <div className="flex items-center justify-center md:justify-start w-full md:w-auto h-full py-0">
-          <Link href="/" className="outline-none">
-            <ChameleonLogo className="w-40 h-[42px] sm:w-[190px] sm:h-[48px] relative z-10 transition-transform duration-300 hover:scale-[1.01]" animated={true} />
-          </Link>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center flex-wrap justify-center gap-2">
-            <Link 
-              href="/"
-              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
-            >
-              Home Command
-            </Link>
-            <Link 
-              href="/health"
-              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
-            >
-              Ecosystem Health
-            </Link>
-            <Link 
-              href="/dashboard"
-              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
-            >
-              Smart Money Terminal
-            </Link>
-            <Link 
-              href="/tracker"
-              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
-            >
-              Smart Wallet Tracker
-            </Link>
-            <Link 
-              href="/narratives"
-              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
-            >
-              Narrative Detector
-            </Link>
-            <Link 
-              href="/dna"
-              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
-            >
-              Wallet DNA
-            </Link>
-            <Link 
-              href="/replay-v2"
-              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
-            >
-              Alpha Replay
-            </Link>
-            <button className="border border-app-emerald text-app-emerald bg-app-emerald/10 font-bold px-4 py-1.5 rounded-full text-xs transition-all duration-200 cursor-default" disabled>
-              Alpha Stats ✨
-            </button>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            {/* Theme switcher */}
-            <button 
-              onClick={toggleTheme}
-              className="w-8 h-8 flex items-center justify-center rounded-xl bg-app-card border border-app-border hover:bg-app-card-hover text-app-fg transition-all active:scale-95 cursor-pointer shadow-sm"
-              title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            >
-              {isDarkMode ? <Sun className="w-3.5 h-3.5 text-amber-400 animate-pulse" /> : <Moon className="w-3.5 h-3.5 text-blue-600" />}
-            </button>
-
-            <div className="hidden sm:flex bg-app-card border border-app-emerald/25 px-2.5 py-1 rounded-full items-center space-x-1.5 shadow-sm">
-              <div className="w-1.5 h-1.5 bg-app-emerald rounded-full animate-pulse"></div>
-              <span className="text-[9px] font-mono text-app-emerald uppercase tracking-wider font-bold">Mantle Verification Live</span>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Unified Header */}
+      <Header isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
 
       {/* INTRO HERO SECTION */}
       <section className="bg-gradient-to-r from-app-emerald/5 via-transparent to-app-purple/5 border border-app-border rounded-2xl p-6 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

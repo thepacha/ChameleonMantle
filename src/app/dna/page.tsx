@@ -38,7 +38,7 @@ import {
   ResponsiveContainer 
 } from 'recharts';
 import { cn, formatCurrency, formatNumber } from '@/src/lib/utils';
-import { ChameleonLogo } from '@/src/components/ChameleonLogo';
+import { Header } from '@/src/components/Header';
 import Link from 'next/link';
 
 interface SignalItem {
@@ -449,85 +449,8 @@ export default function WalletDnaPage() {
   return (
     <div className="min-h-screen bg-app-bg text-app-fg p-4 md:p-6 flex flex-col gap-6 selection:bg-emerald-500/30">
       
-      {/* HEADER CONTROLS */}
-      <header className="flex flex-col items-center md:flex-row md:items-center justify-between gap-4 border-b border-app-border/60 pb-5 md:pb-4 h-auto md:h-[65px]">
-        <div className="flex items-center justify-center md:justify-start w-full md:w-auto h-full">
-          <Link href="/" className="outline-none" id="logo-redirect-home">
-            <ChameleonLogo className="w-40 h-[42px] sm:w-[190px] sm:h-[48px] relative z-10 transition-transform duration-300 hover:scale-[1.01]" animated={true} />
-          </Link>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-3">
-          <nav className="flex flex-wrap items-center gap-2">
-            <Link 
-              href="/"
-              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
-              id="header-nav-home"
-            >
-              Home Command
-            </Link>
-            <Link 
-              href="/health"
-              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
-              id="header-nav-health"
-            >
-              Ecosystem Health
-            </Link>
-            <Link 
-              href="/dashboard"
-              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
-              id="header-nav-dashboard"
-            >
-              Smart Money Terminal
-            </Link>
-            <Link 
-              href="/tracker"
-              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
-              id="header-nav-tracker"
-            >
-              Smart Wallet Tracker
-            </Link>
-            <Link 
-              href="/narratives"
-              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
-              id="header-nav-narratives"
-            >
-              Narrative Detector
-            </Link>
-            <button className="border border-app-emerald text-app-emerald bg-app-emerald/10 font-bold px-3.5 py-1.5 rounded-full text-xs cursor-default" disabled id="header-nav-dna-active">
-              Wallet DNA
-            </button>
-            <Link 
-              href="/replay-v2"
-              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
-            >
-              Alpha Replay
-            </Link>
-            <Link 
-              href="/stats"
-              className="border border-app-border text-app-zinc-text bg-app-card hover:bg-app-card-hover hover:text-app-fg px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all"
-            >
-              Alpha Stats ✨
-            </Link>
-          </nav>
-          
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={toggleTheme}
-              className="w-8 h-8 flex items-center justify-center rounded-xl bg-app-card border border-app-border hover:bg-app-card-hover text-app-fg transition-all cursor-pointer shadow-sm"
-              title={isDarkMode ? "Switch to Light Theme" : "Switch to Dark Theme"}
-              id="theme-toggler"
-            >
-              {isDarkMode ? <Sun className="w-3.5 h-3.5 text-amber-500 animate-pulse" /> : <Moon className="w-3.5 h-3.5 text-blue-600" />}
-            </button>
-
-            <div className="hidden sm:flex bg-app-card border border-app-emerald/20 px-2.5 py-1 rounded-full items-center space-x-1.5 shadow-sm">
-              <span className="w-1.5 h-1.5 bg-app-emerald rounded-full animate-ping"></span>
-              <span className="text-[10px] font-mono text-app-emerald uppercase tracking-wider font-bold">Mantle Live</span>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Unified Header */}
+      <Header isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
 
       {/* SUB-HEADER DESCRIPTION */}
       <section className="flex flex-col gap-1.5 md:flex-row md:items-baseline justify-between" id="intro-section">

@@ -24,70 +24,103 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* Light Theme - Inspired by RealEstate Pro (Forest/Teal Green & soft gray canvas) */
-  --app-bg: #f4f6f5;
-  --app-fg: #0d120f;
-  --app-border: #e2e7e4;
-  --app-card: #ffffff;
-  --app-card-hover: #f9fbf9;
-  --app-zinc-text: #6b7280;
-  --app-emerald: #00875a;
-  
-  /* Adapted bright theme colors for better readability */
-  --app-amber: #c2410c; /* darker amber/orange */
-  --app-rose: #be123c;  /* darker rose */
-  --app-blue: #2563eb;  /* darker blue */
-  --app-purple: #7e22ce; /* darker purple */
-  --app-red: #b91c1c;
+  /* Global Design System - Light Theme */
+  --bg-base: #F5F5F5;
+  --bg-surface: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-hover: #F8F8F8;
+  --text-primary: #0D0D0D;
+  --text-secondary: #555555;
+  --text-muted: #999999;
+  --border: rgba(0,0,0,0.08);
 
-  --app-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.02), 0 10px 32px -4px rgba(0, 15, 10, 0.03);
+  --accent-green: #10B981;
+  --accent-purple: #8B5CF6;
+  --accent-blue: #3B82F6;
+  --accent-red: #EF4444;
+  --accent-amber: #F59E0B;
+
+  /* App legacy mapped variables to keep absolute compatibility */
+  --app-bg: var(--bg-base);
+  --app-fg: var(--text-primary);
+  --app-border: var(--border);
+  --app-card: var(--bg-card);
+  --app-card-hover: var(--bg-hover);
+  --app-zinc-text: var(--text-secondary);
+  --app-muted: var(--text-muted);
+  --app-emerald: var(--accent-green);
+  
+  --app-amber: var(--accent-amber);
+  --app-rose: var(--accent-red);
+  --app-blue: var(--accent-blue);
+  --app-purple: var(--accent-purple);
+  --app-red: var(--accent-red);
+
+  --app-shadow: 0 2px 12px rgba(0,0,0,0.06);
 }
 
 .dark {
-  /* Dark Theme - Premium dark emerald matching the design system */
-  --app-bg: #0d1117;
-  --app-fg: #e6edf3;
-  --app-border: rgba(255, 255, 255, 0.08);
-  --app-card: #161b22;
-  --app-card-hover: #21262d;
-  --app-zinc-text: #8b949e;
-  --app-emerald: #10b981;
+  /* Global Design System - Dark Theme (Default) */
+  --bg-base: #0F0F0F;
+  --bg-surface: #1A1A1A;
+  --bg-card: #1E1E1E;
+  --bg-hover: #252525;
+  --text-primary: #FFFFFF;
+  --text-secondary: #A0A0A0;
+  --text-muted: #555555;
+  --border: rgba(255,255,255,0.08);
 
-  /* Restored default tailwind -500 colors for dark mode */
-  --app-amber: #f59e0b;
-  --app-rose: #f43f5e;
-  --app-blue: #3b82f6;
-  --app-purple: #a855f7;
-  --app-red: #ef4444;
+  --accent-green: #10B981;
+  --accent-purple: #8B5CF6;
+  --accent-blue: #3B82F6;
+  --accent-red: #EF4444;
+  --accent-amber: #F59E0B;
 
-  --app-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0,0,0,0.1);
+  /* App legacy mapped variables to keep absolute compatibility */
+  --app-bg: var(--bg-base);
+  --app-fg: var(--text-primary);
+  --app-border: var(--border);
+  --app-card: var(--bg-card);
+  --app-card-hover: var(--bg-hover);
+  --app-zinc-text: var(--text-secondary);
+  --app-muted: var(--text-muted);
+  --app-emerald: var(--accent-green);
+
+  --app-amber: var(--accent-amber);
+  --app-rose: var(--accent-red);
+  --app-blue: var(--accent-blue);
+  --app-purple: var(--accent-purple);
+  --app-red: var(--accent-red);
+
+  --app-shadow: 0 2px 12px rgba(0,0,0,0.15);
 }
 
 body {
   background-color: var(--app-bg);
   color: var(--app-fg);
   font-family: var(--font-sans);
-  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .bento-card {
   background-color: var(--app-card);
   border: 1px solid var(--app-border);
   box-shadow: var(--app-shadow);
-  border-radius: 12px;
+  border-radius: 16px;
+  padding: 24px;
   overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 150ms ease;
 }
 
 .bento-card:hover {
   background-color: var(--app-card-hover);
-  border-color: rgba(0, 135, 90, 0.4);
-  transform: translateY(-2px);
-  box-shadow: 0 15px 45px -10px rgba(0, 40, 20, 0.06), 0 2px 8px -2px rgba(0, 0, 0, 0.02);
+  border-color: rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
 }
 
 .dark .bento-card:hover {
-  border-color: rgba(0, 176, 116, 0.5);
-  box-shadow: 0 15px 45px -10px rgba(0, 0, 0, 0.6), 0 0 24px rgba(0, 176, 116, 0.1);
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
 }
 

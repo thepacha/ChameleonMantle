@@ -28,15 +28,12 @@ export function Header({ isDarkMode, toggleTheme, dateRangeText = "01 Apr, 2026 
   const mainNavItems = [
     { label: "Dashboard", href: "/" },
     { label: "Smart Money", href: "/dashboard" },
-    { label: "Whale Tracker", href: "/tracker" },
-    { label: "Narratives", href: "/narratives" },
+    { label: "Wallet DNA", href: "/dna" },
+    { label: "Alpha Stats", href: "/stats" },
   ];
 
   const moreNavItems = [
-    { label: "Ecosystem Health", href: "/health" },
-    { label: "Wallet DNA", href: "/dna" },
     { label: "Alpha Replay", href: "/replay-v2" },
-    { label: "Alpha Stats", href: "/stats" },
     { label: "Validation Center", href: "/performance" },
   ];
 
@@ -93,7 +90,11 @@ export function Header({ isDarkMode, toggleTheme, dateRangeText = "01 Apr, 2026 
           })}
 
           {/* More Dropdown Target */}
-          <div className="relative h-full flex items-center">
+          <div
+            className="relative h-full flex items-center"
+            onMouseEnter={() => setMoreOpen(true)}
+            onMouseLeave={() => setMoreOpen(false)}
+          >
             <button
               onClick={() => setMoreOpen(!moreOpen)}
               className={cn(
@@ -113,34 +114,31 @@ export function Header({ isDarkMode, toggleTheme, dateRangeText = "01 Apr, 2026 
             {/* Dropdown Menu */}
             <AnimatePresence>
               {moreOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setMoreOpen(false)} />
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 8 }}
-                    transition={{ duration: 0.15, ease: "easeOut" }}
-                    className="absolute right-0 top-[calc(100%-8px)] w-56 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-2 z-20 flex flex-col gap-0.5"
-                  >
-                    {moreNavItems.map((item) => {
-                      const isSubActive = pathname === item.href;
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          className={cn(
-                            "flex items-center h-[36px] px-3 rounded-lg text-xs font-medium font-sans transition-colors",
-                            isSubActive
-                              ? "bg-emerald-500/10 text-[#10B981]"
-                              : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-                          )}
-                        >
-                          {item.label}
-                        </Link>
-                      );
-                    })}
-                  </motion.div>
-                </>
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  className="absolute right-0 top-[calc(100%-8px)] w-56 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-2 z-20 flex flex-col gap-0.5"
+                >
+                  {moreNavItems.map((item) => {
+                    const isSubActive = pathname === item.href;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn(
+                          "flex items-center h-[36px] px-3 rounded-lg text-xs font-medium font-sans transition-colors",
+                          isSubActive
+                            ? "bg-emerald-500/10 text-[#10B981]"
+                            : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                        )}
+                      >
+                        {item.label}
+                      </Link>
+                    );
+                  })}
+                </motion.div>
               )}
             </AnimatePresence>
           </div>

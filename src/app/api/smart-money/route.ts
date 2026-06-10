@@ -1,10 +1,29 @@
 import { NextResponse } from 'next/server';
+import { getMantleTokenTransfers } from '@/src/lib/mantle';
 
 export async function GET() {
-  const activities = [
-    { id: '1', address: '0x123...456', type: 'buy', asset: 'MNT', amount: 50000, valueUsd: 45000, timestamp: new Date().toISOString(), isSmartMoney: true },
-    { id: '2', address: '0x789...abc', type: 'sell', asset: 'USDC', amount: 100000, valueUsd: 100000, timestamp: new Date(Date.now() - 3600000).toISOString(), isSmartMoney: true },
-    { id: '3', address: '0xdef...012', type: 'transfer', asset: 'ETH', amount: 10, valueUsd: 25000, timestamp: new Date(Date.now() - 7200000).toISOString(), isSmartMoney: true },
-  ];
-  return NextResponse.json(activities);
+  try {
+    const { data: realTransfers, error, warning } = await getMantleTokenTransfers();
+    if (error) {
+      return NextResponse.json({ error }, { status: 500 });
+    }
+    if (realTransfers && realTransfers.length > 0) {
+      const activities = realTransfers.map((tx: any, idx: number) => ({
+        id: tx.transaction_hash || String(idx),
+        address: tx.trader_address,
+        type: 'buy',
+        asset: tx.token_bought_symbol || 'WMNT',
+        amount: tx.token_bought_amount,
+        valueUsd: tx.trade_value_usd,
+        timestamp: tx.block_timestamp,
+        isSmartMoney: true
+      }));
+      return NextResponse.json(activities);
+    }
+    return NextResponse.json([]);
+  } catch (e: any) {
+    console.error("GET smart-money error:", e);
+    return NextResponse.json({ error: e.message || "Failed to fetch smart money transfers" }, { status: 500 });
+  }
 }
+

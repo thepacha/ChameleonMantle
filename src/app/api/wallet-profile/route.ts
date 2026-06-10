@@ -49,15 +49,33 @@ export async function POST(req: Request) {
     - Craft a description that matches the DNA classification perfectly.
     - Do not use generic filler. Be distinct and specific.`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: prompt,
-      config: {
-        temperature: 0.7,
-      },
-    });
+    let text = '';
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.5-flash',
+        contents: prompt,
+        config: {
+          temperature: 0.7,
+        },
+      });
+      text = response.text || '';
+    } catch (err: any) {
+      console.warn('Primary gemini-3.5-flash failed, trying fallback gemini-3.1-flash-lite:', err);
+      try {
+        const response = await ai.models.generateContent({
+          model: 'gemini-3.1-flash-lite',
+          contents: prompt,
+          config: {
+            temperature: 0.7,
+          },
+        });
+        text = response.text || '';
+      } catch (fallbackErr) {
+        console.error('Fallback gemini-3.1-flash-lite also failed:', fallbackErr);
+        throw fallbackErr;
+      }
+    }
 
-    const text = response.text || '';
     return NextResponse.json({ profile: text.trim() });
   } catch (error) {
     console.error('Gemini error generating profile description:', error);

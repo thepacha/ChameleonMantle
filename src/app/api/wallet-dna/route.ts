@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI, Type } from "@google/genai";
+import { OpenAI } from "openai";
 import { ChameleonOperator } from "@/src/lib/chameleon/operator";
 
 export async function POST(req: NextRequest) {
@@ -21,25 +21,25 @@ export async function POST(req: NextRequest) {
     }
 
     // Check configuration safely
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY;
     const operatorPrivateKey = process.env.CHAMELEON_OPERATOR_PRIVATE_KEY;
     const contractAddress = process.env.CHAMELEON_CONTRACT_ADDRESS;
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: "GEMINI_API_KEY is not configured in environment variables." },
+        { error: "OPENROUTER_API_KEY or GEMINI_API_KEY is not configured in environment variables." },
         { status: 500 }
       );
     }
 
-    // Initialize Gemini Client
-    const ai = new GoogleGenAI({
+    // Initialize OpenAI Client for OpenRouter
+    const openai = new OpenAI({
+      baseURL: "https://openrouter.ai/api/v1",
       apiKey,
-      httpOptions: {
-        headers: {
-          "User-Agent": "aistudio-build",
-        },
-      },
+      defaultHeaders: {
+        "HTTP-Referer": process.env.APP_URL || "https://ai.studio/build",
+        "X-Title": "Chameleon",
+      }
     });
 
     const systemPrompt = `You are a forensic behavioral analyst for the ChameleonAI Layer 2 system on Mantle.
@@ -47,41 +47,43 @@ export async function POST(req: NextRequest) {
     Target Address: ${wallet}
     Context description: ${analysisPrompt}
 
-    Deduce the investor archetype, overall conviction, and their favorite sector niches. Use top-tier quantitative L2 financial descriptions.`;
+    Deduce the investor archetype, overall conviction, and their favorite sector niches. Use top-tier quantitative L2 financial descriptions.
 
-    // Call Gemini with strict JSON schema
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: systemPrompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            archetype: { 
-              type: Type.STRING,
-              description: "The behavioral archetype. E.g., Early Trend Sniper, LP Farmer, Governance Insider, Whale Accumulator, High-Frequency Ape."
-            },
-            convictionScore: { 
-              type: Type.INTEGER, 
-              description: "AI conviction score of holding strategy from 0 to 100."
-            },
-            favoriteSectors: { 
-              type: Type.STRING,
-              description: "Comma-separated sector list of favorites on Mantle (e.g. AI & GPU, DeFi, LRT Restaking)."
-            }
-          },
-          required: ["archetype", "convictionScore", "favoriteSectors"]
+    The response must be strictly formatted as JSON to be directly passed as arguments to smart contract function calls.
+    Do NOT include any markdown formatting (like \`\`\`json or backticks) in your output. Just return the raw JSON object.
+
+    REQUIRED SCHEMA:
+    {
+      "archetype": "string archetype (e.g., Early Trend Sniper, LP Farmer, Governance Insider, Whale Accumulator, High-Frequency Ape)",
+      "convictionScore": number (holding strategy conviction score from 0 to 100),
+      "favoriteSectors": "string comma-separated sector list of favorites (e.g., 'AI & GPU, DeFi, LRT Restaking')"
+    }`;
+
+    // Call OpenAI with strict JSON format
+    const completion = await openai.chat.completions.create({
+      model: "google/gemma-4-31b-it:free",
+      messages: [
+        {
+          role: "user",
+          content: systemPrompt
         }
-      }
+      ],
+      response_format: { type: "json_object" }
     });
 
-    const aiText = response.text?.trim() || "";
+    const aiText = completion.choices[0]?.message?.content?.trim() || "";
     let dnaResult;
     try {
-      dnaResult = JSON.parse(aiText);
+      function cleanAndParseJson(text: string): any {
+        let cleaned = text.trim();
+        if (cleaned.startsWith("```")) {
+          cleaned = cleaned.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
+        }
+        return JSON.parse(cleaned);
+      }
+      dnaResult = cleanAndParseJson(aiText);
     } catch (parseErr) {
-      console.error("Failed to parse Gemini DNA JSON output:", aiText);
+      console.error("Failed to parse OpenRouter DNA JSON output:", aiText);
       return NextResponse.json(
         { error: "AI generated an invalid JSON structure. Please retry." },
         { status: 500 }

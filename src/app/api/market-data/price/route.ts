@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
+import { OpenAI } from "openai";
 import { getScannedWhales, getScannedRecentMoves } from "@/src/lib/smart-money-scanner";
 
 // Simple in-memory global cache for high availability & rate-limit bypassing
@@ -17,19 +17,19 @@ let cachedState: PriceState = {
   lastUpdated: Date.now(),
 };
 
-// Lazy initialization of Gemini API to prevent crashing on startups with missing keys
-let aiClient: GoogleGenAI | null = null;
-function getAiClient(): GoogleGenAI | null {
+// Lazy initialization of OpenAI API for OpenRouter to prevent crashing on startups with missing keys
+let aiClient: OpenAI | null = null;
+function getAiClient(): OpenAI | null {
   if (!aiClient) {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY;
     if (apiKey) {
-      aiClient = new GoogleGenAI({
+      aiClient = new OpenAI({
+        baseURL: "https://openrouter.ai/api/v1",
         apiKey,
-        httpOptions: {
-          headers: {
-            "User-Agent": "aistudio-build",
-          },
-        },
+        defaultHeaders: {
+          "HTTP-Referer": process.env.APP_URL || "https://ai.studio/build",
+          "X-Title": "Chameleon",
+        }
       });
     }
   }
@@ -124,13 +124,19 @@ Example Responses:
 "MNT is down 3.1% while whale accumulation increased, suggesting possible long-term accumulation."
 "MNT is trading sideways with low volatility and no unusual whale activity detected."`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: prompt,
+      const completion = await ai.chat.completions.create({
+        model: "google/gemma-4-31b-it:free",
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ]
       });
       
-      if (response && response.text) {
-        customInsight = response.text.trim().replace(/^"|"$/g, ""); // clean wrapping quotes
+      const responseText = completion.choices[0]?.message?.content || "";
+      if (responseText) {
+        customInsight = responseText.trim().replace(/^"|"$/g, ""); // clean wrapping quotes
         aiInsightDone = true;
       }
     } catch (e) {

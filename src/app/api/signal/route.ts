@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI, Type } from "@google/genai";
+import { OpenAI } from "openai";
 import { ChameleonOperator } from "@/src/lib/chameleon/operator";
 
 export async function POST(req: NextRequest) {
@@ -21,66 +21,68 @@ export async function POST(req: NextRequest) {
     }
 
     // Check configuration safely
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY;
     const operatorPrivateKey = process.env.CHAMELEON_OPERATOR_PRIVATE_KEY;
     const contractAddress = process.env.CHAMELEON_CONTRACT_ADDRESS;
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: "GEMINI_API_KEY is not configured in environment variables." },
+        { error: "OPENROUTER_API_KEY or GEMINI_API_KEY is not configured in environment variables." },
         { status: 500 }
       );
     }
 
-    // Initialize Gemini Client
-    const ai = new GoogleGenAI({
+    // Initialize OpenAI Client for OpenRouter
+    const openai = new OpenAI({
+      baseURL: "https://openrouter.ai/api/v1",
       apiKey,
-      httpOptions: {
-        headers: {
-          "User-Agent": "aistudio-build",
-        },
-      },
+      defaultHeaders: {
+        "HTTP-Referer": process.env.APP_URL || "https://ai.studio/build",
+        "X-Title": "Chameleon",
+      }
     });
 
     const systemPrompt = `You are a cognitive trading intelligence operator for the ChameleonAI Layer 2 system on Mantle.
     Analyze the following request and on-chain intelligence prompt for wallet address: ${wallet}.
     Context prompt: ${analysisPrompt}
 
-    Generate a trading signal with high-quality, professional, realistic on-chain vocabulary (e.g., liquidity range, smart contract volume, accumulation cycles, index).`;
+    Generate a trading signal with high-quality, professional, realistic on-chain vocabulary (e.g., liquidity range, smart contract volume, accumulation cycles, index).
 
-    // Call Gemini with strict JSON schema
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: systemPrompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            signalType: { 
-              type: Type.STRING,
-              description: "The type of trading signal. Choose from: accumulation, exit, rotation, arbitrage, liquidity_mining."
-            },
-            confidence: { 
-              type: Type.INTEGER, 
-              description: "AI confidence score from 0 to 100."
-            },
-            explanation: { 
-              type: Type.STRING,
-              description: "A professional, analytical explanation of the signal (1-2 sentences)."
-            }
-          },
-          required: ["signalType", "confidence", "explanation"]
+    The response must be strictly formatted as JSON to be directly passed as arguments to smart contract function calls.
+    Do NOT include any markdown formatting (like \`\`\`json or backticks) in your output. Just return the raw JSON object.
+
+    REQUIRED SCHEMA:
+    {
+      "signalType": "accumulation" | "exit" | "rotation" | "arbitrage" | "liquidity_mining",
+      "confidence": number (AI confidence score from 0 to 100),
+      "explanation": "string professional and analytical explanation of the signal (1-2 sentences)"
+    }`;
+
+    // Call OpenAI with strict JSON format
+    const completion = await openai.chat.completions.create({
+      model: "google/gemma-4-31b-it:free",
+      messages: [
+        {
+          role: "user",
+          content: systemPrompt
         }
-      }
+      ],
+      response_format: { type: "json_object" }
     });
 
-    const aiText = response.text?.trim() || "";
+    const aiText = completion.choices[0]?.message?.content?.trim() || "";
     let signalResult;
     try {
-      signalResult = JSON.parse(aiText);
+      function cleanAndParseJson(text: string): any {
+        let cleaned = text.trim();
+        if (cleaned.startsWith("```")) {
+          cleaned = cleaned.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
+        }
+        return JSON.parse(cleaned);
+      }
+      signalResult = cleanAndParseJson(aiText);
     } catch (parseErr) {
-      console.error("Failed to parse Gemini JSON output:", aiText);
+      console.error("Failed to parse OpenRouter JSON output:", aiText);
       return NextResponse.json(
         { error: "AI generated an invalid JSON structure. Please retry." },
         { status: 500 }

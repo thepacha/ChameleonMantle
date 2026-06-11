@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI, Type } from "@google/genai";
+import { OpenAI } from "openai";
 import { 
   getMNTBalance, 
   getProvider 
@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
     const convictionScore = conviction.convictionScore;
     const convictionLevel = conviction.convictionLevel;
 
-    const apiKey = process.env.GEMINI_API_KEY || "";
+    const apiKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY || "";
     if (!apiKey) {
       // Return beautiful fully-populated on-chain fallback
       const fallback = getFallbackProfile(address, balance, isDeployer, isEarlyAdopter, convictionScore, convictionLevel);
@@ -137,14 +137,14 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Initialize Gemini Client
-    const ai = new GoogleGenAI({
+    // Initialize OpenAI Client for OpenRouter
+    const openai = new OpenAI({
+      baseURL: "https://openrouter.ai/api/v1",
       apiKey,
-      httpOptions: {
-        headers: {
-          "User-Agent": "aistudio-build",
-        },
-      },
+      defaultHeaders: {
+        "HTTP-Referer": process.env.APP_URL || "https://ai.studio/build",
+        "X-Title": "Chameleon",
+      }
     });
 
     const prompt = `You are an elite artificial intelligence on-chain forensics analyst auditing the Mantle Layer 2 Network.
@@ -160,69 +160,58 @@ export async function POST(req: NextRequest) {
     - Computed Conviction Level: ${convictionLevel}
     
     TASK:
-    Generate a highly accurate, fully-formed wallet intelligence profile in JSON format according to the supplied schema constraints.
+    Generate a highly accurate, fully-formed wallet intelligence profile in strictly valid JSON format.
     Provide realistic classification names, confidence ratings, and similarities using active Mantle indicators. Combine logic metrics to predict behavior patterns exactly.
-    Do not use generic filler. Show elite blockchain literacy and use phrases like: "liquidity range", "LP concentration", "MEV frontrun", "yield optimizers", "slippage tolerance".`;
+    Do not use generic filler. Show elite blockchain literacy and use phrases like: "liquidity range", "LP concentration", "MEV frontrun", "yield optimizers", "slippage tolerance".
+    
+    The response must be strictly formatted as JSON to be directly passed as arguments to smart contract function calls.
+    Do NOT include any markdown formatting (like \`\`\`json or backticks) in your output. Just return the raw JSON object.
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            classification: { 
-              type: Type.STRING,
-              description: "A solid behavioral category. Select from: Whale, Builder, Protocol Deployer, Long-Term Holder, Trader, Early Adopter, Ecosystem Participant, Yield Farmer, Market Maker, Dormant Wallet."
-            },
-            confidenceScore: { type: Type.INTEGER },
-            classificationReason: { type: Type.STRING },
-            convictionScore: { type: Type.INTEGER },
-            convictionLevel: { type: Type.STRING },
-            convictionExplanation: { type: Type.STRING },
-            summary: { type: Type.STRING },
-            pattern: { 
-              type: Type.STRING,
-              description: "A behavioral pattern. Select from: Accumulation, Distribution, Dormancy, Sudden Awakening, Builder Activity, Ecosystem Expansion, Abnormal Transaction Growth."
-            },
-            patternExplanation: { type: Type.STRING },
-            riskScore: { type: Type.INTEGER },
-            riskLevel: { type: Type.STRING },
-            riskReason: { type: Type.STRING },
-            similarWallets: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  address: { type: Type.STRING },
-                  similarityPercentage: { type: Type.INTEGER },
-                  reason: { type: Type.STRING }
-                },
-                required: ["address", "similarityPercentage", "reason"]
-              }
-            }
-          },
-          required: [
-            "classification",
-            "confidenceScore",
-            "classificationReason",
-            "convictionScore",
-            "convictionLevel",
-            "convictionExplanation",
-            "summary",
-            "pattern",
-            "patternExplanation",
-            "riskScore",
-            "riskLevel",
-            "riskReason",
-            "similarWallets"
-          ]
+    REQUIRED SCHEMA:
+    {
+      "classification": "Whale" | "Builder" | "Protocol Deployer" | "Long-Term Holder" | "Trader" | "Early Adopter" | "Ecosystem Participant" | "Yield Farmer" | "Market Maker" | "Dormant Wallet",
+      "confidenceScore": number (0-100),
+      "classificationReason": "string description",
+      "convictionScore": number (0-100),
+      "convictionLevel": "string conviction",
+      "convictionExplanation": "string conviction explanation",
+      "summary": "string summary",
+      "pattern": "Accumulation" | "Distribution" | "Dormancy" | "Sudden Awakening" | "Builder Activity" | "Ecosystem Expansion" | "Abnormal Transaction Growth",
+      "patternExplanation": "string pattern explanation",
+      "riskScore": number (0-100),
+      "riskLevel": "Low" | "Medium" | "High" | "Critical",
+      "riskReason": "string risk reason",
+      "similarWallets": [
+        {
+          "address": "0x...",
+          "similarityPercentage": number,
+          "reason": "string reason"
         }
-      }
+      ]
+    }`;
+
+    const completion = await openai.chat.completions.create({
+      model: "google/gemma-4-31b-it:free",
+      messages: [
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      response_format: { type: "json_object" }
     });
 
-    const parsedData = JSON.parse(response.text || "{}");
+    const completionText = completion.choices[0]?.message?.content || "{}";
+    
+    function cleanAndParseJson(text: string): any {
+      let cleaned = text.trim();
+      if (cleaned.startsWith("```")) {
+        cleaned = cleaned.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
+      }
+      return JSON.parse(cleaned);
+    }
+
+    const parsedData = cleanAndParseJson(completionText);
 
     return NextResponse.json({
       success: true,

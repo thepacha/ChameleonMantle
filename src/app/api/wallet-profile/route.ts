@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
+import { OpenAI } from 'openai';
 
 export async function POST(req: Request) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY || '';
+    const apiKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY || '';
     if (!apiKey) {
       // Return a graceful fallback description if key is missing
       return NextResponse.json({ 
@@ -11,13 +11,13 @@ export async function POST(req: Request) {
       });
     }
 
-    const ai = new GoogleGenAI({
+    const openai = new OpenAI({
+      baseURL: "https://openrouter.ai/api/v1",
       apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        },
-      },
+      defaultHeaders: {
+        "HTTP-Referer": process.env.APP_URL || "https://ai.studio/build",
+        "X-Title": "Chameleon",
+      }
     });
 
     const body = await req.json();
@@ -51,29 +51,20 @@ export async function POST(req: Request) {
 
     let text = '';
     try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.5-flash',
-        contents: prompt,
-        config: {
-          temperature: 0.7,
-        },
+      const completion = await openai.chat.completions.create({
+        model: "google/gemma-4-31b-it:free",
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.7
       });
-      text = response.text || '';
+      text = completion.choices[0]?.message?.content || '';
     } catch (err: any) {
-      console.warn('Primary gemini-3.5-flash failed, trying fallback gemini-3.1-flash-lite:', err);
-      try {
-        const response = await ai.models.generateContent({
-          model: 'gemini-3.1-flash-lite',
-          contents: prompt,
-          config: {
-            temperature: 0.7,
-          },
-        });
-        text = response.text || '';
-      } catch (fallbackErr) {
-        console.error('Fallback gemini-3.1-flash-lite also failed:', fallbackErr);
-        throw fallbackErr;
-      }
+      console.warn('Primary OpenRouter google/gemma-4-31b-it:free failed:', err);
+      throw err;
     }
 
     return NextResponse.json({ profile: text.trim() });

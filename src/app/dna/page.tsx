@@ -387,8 +387,40 @@ export default function WalletDnaPage() {
       });
     }
 
+    // Helper to fetch AI generated profile summary
+    const fetchAiProfile = async (reportData: WalletIntelReport) => {
+      setIsAiLoading(true);
+      setAiAnalysis('');
+      try {
+        const response = await fetch('/api/wallet-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            address: reportData.address,
+            dna: reportData.dna,
+            winRate: reportData.winRate,
+            realizedPnl: reportData.realizedPnl >= 0 ? `+$${formatNumber(reportData.realizedPnl)}` : `-$${formatNumber(Math.abs(reportData.realizedPnl))}`,
+            favoriteSector: reportData.favoriteSector,
+            avgHoldTime: reportData.avgHoldTime,
+            preferredDex: reportData.preferredDex
+          })
+        });
+        const resData = await response.json();
+        if (resData.profile) {
+          setAiAnalysis(resData.profile);
+        } else {
+          throw new Error('Fallback response needed');
+        }
+      } catch (e) {
+        console.warn('Gemini API call failed, using default description: ', e);
+        setAiAnalysis(`Forensic intelligence indicates that this wallet operates with high efficiency as an Active On-Chain Participant on Mantle chain. Analysis shows targeted liquidity acquisition in the ${reportData.favoriteSector} sector.`);
+      } finally {
+        setIsAiLoading(false);
+      }
+    };
+
     // Resolve address overrides for legacy IDs if mapped
-    let addressToQuery = query;
+    let addressToQuery = query.trim();
     const legacyShortMap: Record<string, string> = {
       '0xabc': '0x1a4b24c16198888b8f2cbd28e0d7cb63d0be7fa5',
       '0xdef': '0xeaee46aa91c6218dbefa7ac33a109fe2c00a4242',
@@ -399,10 +431,24 @@ export default function WalletDnaPage() {
       addressToQuery = legacyShortMap[addressToQuery.toLowerCase()];
     }
 
-    // Check valid format
-    if (!addressToQuery || !addressToQuery.startsWith('0x') || addressToQuery.length !== 42) {
-      setApiError('Invalid address format for live RPC querying.');
-      setOnChainLoading(false);
+    // Check if the query is in presets or is an ENS / non-hex address
+    const cleanLower = addressToQuery.toLowerCase();
+    const isPreset = !!PRESETS[cleanLower];
+    const is0xAddress = addressToQuery.startsWith('0x') && addressToQuery.length === 42;
+
+    if (isPreset || !is0xAddress) {
+      // Direct simulation loading to give a crisp, instant UX for presets & non-0x search terms
+      try {
+        await new Promise(resolve => setTimeout(resolve, 800));
+        const reportData = generateDeterministicReport(query);
+        setReport(reportData);
+        await fetchAiProfile(reportData);
+      } catch (err: any) {
+        console.error("Simulation generation error:", err);
+        setApiError(err.message || 'Failed to generate behavioral profile.');
+      } finally {
+        setOnChainLoading(false);
+      }
       return;
     }
 
@@ -417,9 +463,7 @@ export default function WalletDnaPage() {
       const liveData = await liveRes.json();
       
       if (liveData.error) {
-        setApiError(liveData.error);
-        setOnChainLoading(false);
-        return;
+        throw new Error(liveData.error);
       }
       if (liveData.warning) {
         setApiWarning(liveData.warning);
@@ -488,41 +532,19 @@ export default function WalletDnaPage() {
       };
 
       setReport(reportData);
+      await fetchAiProfile(reportData);
 
-      // Load AI generated summary route
-      setIsAiLoading(true);
-      setAiAnalysis('');
-      try {
-        const response = await fetch('/api/wallet-profile', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            address: reportData.address,
-            dna: reportData.dna,
-            winRate: reportData.winRate,
-            realizedPnl: reportData.realizedPnl >= 0 ? `+$${formatNumber(reportData.realizedPnl)}` : `-$${formatNumber(Math.abs(reportData.realizedPnl))}`,
-            favoriteSector: reportData.favoriteSector,
-            avgHoldTime: reportData.avgHoldTime,
-            preferredDex: reportData.preferredDex
-          })
-        });
-        const resData = await response.json();
-        if (resData.profile) {
-          setAiAnalysis(resData.profile);
-        } else {
-          throw new Error('Fallback response needed');
-        }
-      } catch (e) {
-        console.warn('Gemini API call failed, using default description: ', e);
-        setAiAnalysis(`Forensic intelligence indicates that this wallet operates with high efficiency as an Active On-Chain Participant on Mantle chain. Analysis shows targeted liquidity acquisition in the ${reportData.favoriteSector} sector.`);
-      } finally {
-        setIsAiLoading(false);
-      }
     } catch (err: any) {
-      console.error("Mantle RPC live sync issue:", err);
-      setApiError(err.message || 'Mantle Mainnet RPC connection failed or timed out.');
-      setReport(null);
-      setAiAnalysis('');
+      console.warn("Mantle RPC live sync connection failed, falling back to simulation:", err);
+      setApiWarning(`Live sync offline: ${err.message || 'Mantle RPC node timed out'}. Displaying cognitive behavioral trace instead.`);
+      
+      try {
+        const reportData = generateDeterministicReport(query);
+        setReport(reportData);
+        await fetchAiProfile(reportData);
+      } catch (secErr: any) {
+        setApiError(`Could not generate simulation: ${secErr.message}`);
+      }
     } finally {
       setOnChainLoading(false);
     }
@@ -709,7 +731,71 @@ export default function WalletDnaPage() {
 
       {/* SCAN RESULT PANEL */}
       <AnimatePresence mode="wait">
-        {report && (
+        {onChainLoading ? (
+          <motion.div
+            key="loading-panel"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.25 }}
+            className="bento-card bg-app-card/35 p-12 border border-app-border/60 relative overflow-hidden backdrop-blur-md flex flex-col items-center justify-center gap-6 min-h-[300px] text-center w-full"
+            id="loading-status-panel"
+          >
+            {/* Pulsing Cyber Loader */}
+            <div className="relative flex items-center justify-center">
+              <div className="absolute w-20 h-20 rounded-full border-2 border-emerald-500/10 animate-ping"></div>
+              <div className="absolute w-16 h-16 rounded-full border-t-2 border-b-2 border-emerald-500 animate-spin"></div>
+              <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 relative z-10 shadow-inner">
+                <Cpu className="w-5 h-5 animate-pulse" />
+              </div>
+            </div>
+            <div className="space-y-2 max-w-md">
+              <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest text-emerald-400 font-mono animate-pulse">
+                Decrypting On-Chain DNA...
+              </h3>
+              <p className="text-xs text-app-zinc-text font-semibold leading-relaxed">
+                Interrogating Mantle Mainnet nodes & scanning DEX transactions. Constructing cognitive behavior profile...
+              </p>
+            </div>
+            
+            {/* Mock progression steps */}
+            <div className="flex flex-wrap justify-center items-center gap-3 mt-4 text-[10px] font-mono font-black text-emerald-500/60 uppercase tracking-widest">
+              <span className="animate-pulse">RPC_NODE_ONLINE</span>
+              <span>•</span>
+              <span className="animate-pulse delay-75">DEX_TRADES_LOADED</span>
+              <span>•</span>
+              <span className="animate-pulse delay-150">AI_PROFILING</span>
+            </div>
+          </motion.div>
+        ) : apiError ? (
+          <motion.div
+            key="error-panel"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.25 }}
+            className="bento-card bg-rose-500/5 border border-rose-500/20 p-8 flex flex-col items-center justify-center text-center gap-4 min-h-[250px] w-full"
+            id="error-status-panel"
+          >
+            <div className="bg-rose-500/10 text-rose-500 dark:text-rose-400 p-4 rounded-full shadow-inner animate-bounce">
+              <AlertCircle className="w-8 h-8" />
+            </div>
+            <div className="space-y-1 max-w-md">
+              <h3 className="text-xs font-black uppercase tracking-widest text-rose-400 font-mono">
+                Decryption Interrupted
+              </h3>
+              <p className="text-xs text-app-zinc-text font-semibold leading-relaxed">
+                {apiError}
+              </p>
+            </div>
+            <button
+              onClick={() => runReport(searchVal || 'snipes.eth')}
+              className="mt-2 text-[10px] font-mono font-black uppercase tracking-widest bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 px-4 py-2 rounded-xl transition-all cursor-pointer"
+            >
+              Retry Forensic Scan
+            </button>
+          </motion.div>
+        ) : report ? (
           <motion.div
             key={report.address}
             initial={{ opacity: 0, y: 15 }}
@@ -721,46 +807,20 @@ export default function WalletDnaPage() {
           >
             
             {/* Live RPC Response feedback logs */}
-            {(apiError || apiWarning || onChainLoading) && (
-              <div className="flex flex-col gap-3">
-                {apiError && (
-                  <div className="bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/20 p-4 rounded-xl flex items-start gap-3 shadow-sm">
-                    <div className="bg-rose-500/10 text-rose-500 dark:text-rose-400 p-2 rounded-lg shrink-0">
-                      <AlertCircle className="w-5 h-5" />
-                    </div>
-                    <div className="flex-grow text-left">
-                      <h4 className="text-xs font-black uppercase tracking-wider text-rose-400">Mainnet Synced Exception</h4>
-                      <p className="text-[11px] text-app-zinc-text font-semibold mt-1 leading-relaxed">{apiError}</p>
-                    </div>
-                  </div>
-                )}
-
-                {apiWarning && (
-                  <div className="bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl flex items-start gap-3 shadow-sm">
-                    <div className="bg-amber-500/10 text-amber-500 p-2 rounded-lg shrink-0">
-                      <AlertCircle className="w-5 h-5" />
-                    </div>
-                    <div className="flex-grow text-left">
-                      <h4 className="text-xs font-black uppercase tracking-wider text-amber-400">Node Sync Limit</h4>
-                      <p className="text-[11px] text-app-zinc-text font-semibold mt-1 leading-relaxed">{apiWarning}</p>
-                    </div>
-                  </div>
-                )}
-
-                {onChainLoading && (
-                  <div className="bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl flex items-center gap-3 shadow-sm">
-                    <div className="relative flex h-3.5 w-3.5 shrink-0 ml-1">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
-                    </div>
-                    <p className="text-[11px] text-app-zinc-text font-bold animate-pulse">Running live analytics on Mantle Mainnet RPC node telemetry...</p>
-                  </div>
-                )}
+            {apiWarning && (
+              <div className="bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl flex items-start gap-3 shadow-sm" id="api-warning-banner">
+                <div className="bg-amber-500/10 text-amber-500 p-2 rounded-lg shrink-0">
+                  <AlertCircle className="w-5 h-5" />
+                </div>
+                <div className="flex-grow text-left">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-amber-400">Node Sync Limit</h4>
+                  <p className="text-[11px] text-app-zinc-text font-semibold mt-1 leading-relaxed">{apiWarning}</p>
+                </div>
               </div>
             )}
 
-            {!onChainLoading && !apiError && (
-              <div className="bg-emerald-500/5 border border-emerald-500/15 p-3 rounded-xl flex items-center justify-between gap-3 shadow-inner">
+            {!apiWarning && (
+              <div className="bg-emerald-500/5 border border-emerald-500/15 p-3 rounded-xl flex items-center justify-between gap-3 shadow-inner" id="node-synced-banner">
                 <div className="flex items-center gap-2">
                   <span className="relative flex h-2 w-2 shrink-0">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -1346,7 +1406,7 @@ export default function WalletDnaPage() {
             </div>
 
           </motion.div>
-        )}
+        ) : null}
       </AnimatePresence>
 
     </div>

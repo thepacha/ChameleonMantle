@@ -52,7 +52,7 @@ const ETHERSCAN_V2_API_URL = 'https://api.etherscan.io/v2/api';
 let _provider: JsonRpcProvider | null = null;
 export function getProvider(): JsonRpcProvider {
   if (!_provider) {
-    const rpcUrl = process.env.MANTLE_RPC_URL;
+    const rpcUrl = process.env.MANTLE_RPC_URL || 'https://rpc.mantle.xyz';
     
     // Log the RPC URL safely for debugging
     console.log("MANTLE_RPC_URL =", rpcUrl);

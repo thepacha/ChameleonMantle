@@ -40,6 +40,7 @@ import {
 } from 'recharts';
 import { cn, formatCurrency, formatNumber } from '@/src/lib/utils';
 import { Header } from '@/src/components/Header';
+import { trackDnaStorage } from "@/src/lib/usage";
 import Link from 'next/link';
 
 interface SignalItem {
@@ -70,6 +71,15 @@ interface RelatedWallet {
   sharedTrades: number;
 }
 
+interface MultichainBalance {
+  chainId: number;
+  chainName: string;
+  symbol: string;
+  balance: number;
+  priceUsd: number;
+  valueUsd: number;
+}
+
 interface WalletIntelReport {
   address: string;
   ens?: string;
@@ -87,6 +97,7 @@ interface WalletIntelReport {
   signals: SignalItem[];
   pnlHistory: { day: string; val: number }[];
   portfolio: PortfolioItem[];
+  multichainBalances?: MultichainBalance[];
   relatedWallets: RelatedWallet[];
   heatmapDays: { date: string; count: number }[];
 }
@@ -195,6 +206,14 @@ function generateDeterministicReport(addressOrEns: string): WalletIntelReport {
   if (PRESETS[query]) {
     const p = PRESETS[query];
     const seed = getAddressHash(query);
+    const mBal = [
+      { chainId: 1, chainName: 'Ethereum Mainnet', symbol: 'ETH', balance: (seed % 8) * 2.5 + 4.8, priceUsd: 3150.0, valueUsd: Math.round(((seed % 8) * 2.5 + 4.8) * 3150.0 * 100) / 100 },
+      { chainId: 5000, chainName: 'Mantle Network', symbol: 'MNT', balance: (seed % 15) * 450 + 1200, priceUsd: 0.74, valueUsd: Math.round(((seed % 15) * 450 + 1200) * 0.74 * 100) / 100 },
+      { chainId: 8453, chainName: 'Base', symbol: 'ETH', balance: (seed % 5) * 1.8 + 1.2, priceUsd: 3150.0, valueUsd: Math.round(((seed % 5) * 1.8 + 1.2) * 3150.0 * 100) / 100 },
+      { chainId: 42161, chainName: 'Arbitrum One', symbol: 'ETH', balance: (seed % 4) * 1.2 + 0.8, priceUsd: 3150.0, valueUsd: Math.round(((seed % 4) * 1.2 + 0.8) * 3150.0 * 100) / 100 },
+      { chainId: 137, chainName: 'Polygon', symbol: 'POL', balance: (seed % 10) * 125 + 250, priceUsd: 0.55, valueUsd: Math.round(((seed % 10) * 125 + 250) * 0.55 * 100) / 100 }
+    ].sort((a, b) => b.valueUsd - a.valueUsd);
+
     return {
       address: p.address || '0xabc14298cf085b42d76a5b78f4ea492eb9c24942',
       ens: p.ens,
@@ -212,6 +231,7 @@ function generateDeterministicReport(addressOrEns: string): WalletIntelReport {
       signals: p.signals || [],
       pnlHistory: generatePnlHistory(p.realizedPnl || 240000, seed),
       portfolio: p.portfolio || [],
+      multichainBalances: mBal,
       relatedWallets: p.relatedWallets || [],
       heatmapDays: generateHeatmapDays(seed)
     };
@@ -253,6 +273,14 @@ function generateDeterministicReport(addressOrEns: string): WalletIntelReport {
   const favoriteSector = ['AI & Depin', 'DeFi / Concentrated Pools', 'Liquid LRT Restaking', 'Meme Ecosystem', 'Mantle Core L2'][seed % 5];
   const avgHoldTimes = ['3.5 Hours', '2.5 Days', '8.9 Days', '22 Days', '54 Days'];
 
+  const mBal = [
+    { chainId: 1, chainName: 'Ethereum Mainnet', symbol: 'ETH', balance: (seed % 10) * 1.2 + 0.4, priceUsd: 3150.0, valueUsd: Math.round(((seed % 10) * 1.2 + 0.4) * 3150.0 * 100) / 100 },
+    { chainId: 5000, chainName: 'Mantle Network', symbol: 'MNT', balance: (seed % 20) * 300 + 400, priceUsd: 0.74, valueUsd: Math.round(((seed % 20) * 300 + 400) * 0.74 * 100) / 100 },
+    { chainId: 8453, chainName: 'Base', symbol: 'ETH', balance: (seed % 6) * 0.6 + 0.1, priceUsd: 3150.0, valueUsd: Math.round(((seed % 6) * 0.6 + 0.1) * 3150.0 * 100) / 100 },
+    { chainId: 42161, chainName: 'Arbitrum One', symbol: 'ETH', balance: (seed % 4) * 0.4 + 0.2, priceUsd: 3150.0, valueUsd: Math.round(((seed % 4) * 0.4 + 0.2) * 3150.0 * 100) / 100 },
+    { chainId: 137, chainName: 'Polygon', symbol: 'POL', balance: (seed % 100) * 30 + 50, priceUsd: 0.55, valueUsd: Math.round(((seed % 100) * 30 + 50) * 0.55 * 100) / 100 }
+  ].sort((a, b) => b.valueUsd - a.valueUsd);
+
   return {
     address: formattedAddress,
     ens: formattedEns,
@@ -276,6 +304,7 @@ function generateDeterministicReport(addressOrEns: string): WalletIntelReport {
       { id: `dyn-sig-1`, date: '1d ago', token: 'MNT', action: 'BUY', confidence: 85, outcome: 'Active holding', isProfit: null, txHash: `0x${seed.toString(16).substring(0, 4)}...72a2` },
       { id: `dyn-sig-2`, date: '4d ago', token: 'MOE', action: 'SELL', confidence: 90, outcome: '+14% Profit', isProfit: true, txHash: `0x${(seed + 1).toString(16).substring(0, 4)}...f811` }
     ],
+    multichainBalances: mBal,
     relatedWallets: [
       { address: '0xabc14298cf085b42d76a5b78f4ea492eb9c24942', ens: 'snipes.eth', coMovements: 9, sharedTrades: 6 }
     ],
@@ -339,6 +368,7 @@ export default function WalletDnaPage() {
 
   const [isStoringOnChain, setIsStoringOnChain] = useState(false);
   const [onChainStoreResult, setOnChainStoreResult] = useState<any | null>(null);
+  const [portfolioTab, setPortfolioTab] = useState<'mantle' | 'multichain'>('mantle');
 
   // Sync state & recents
   useEffect(() => {
@@ -363,9 +393,6 @@ export default function WalletDnaPage() {
       setRecents(init);
       localStorage.setItem('chameleon_recent_searches', JSON.stringify(init));
     }
-
-    // Default load 'snipes.eth' on start
-    runReport('snipes.eth');
   }, []);
 
   const runReport = async (query: string) => {
@@ -402,7 +429,10 @@ export default function WalletDnaPage() {
             realizedPnl: reportData.realizedPnl >= 0 ? `+$${formatNumber(reportData.realizedPnl)}` : `-$${formatNumber(Math.abs(reportData.realizedPnl))}`,
             favoriteSector: reportData.favoriteSector,
             avgHoldTime: reportData.avgHoldTime,
-            preferredDex: reportData.preferredDex
+            preferredDex: reportData.preferredDex,
+            balances: reportData.portfolio || [],
+            multichainBalances: reportData.multichainBalances || [],
+            transfers: reportData.signals || []
           })
         });
         const resData = await response.json();
@@ -527,6 +557,7 @@ export default function WalletDnaPage() {
           { day: 'Week 4', val: Math.round(totalVolumeSum * 0.05) }
         ],
         portfolio: livePortfolio,
+        multichainBalances: liveData.multichainBalances || [],
         relatedWallets: [],
         heatmapDays: []
       };
@@ -565,6 +596,20 @@ export default function WalletDnaPage() {
       });
       const data = await response.json();
       setOnChainStoreResult(data);
+
+      if (data && data.success) {
+        try {
+          trackDnaStorage(
+            report.address,
+            report.dna || 'Trend Sniper',
+            data.txHash || '',
+            data.blockNumber || 0,
+            aiAnalysis
+          );
+        } catch (trackErr) {
+          console.warn("Storage tracking failed: ", trackErr);
+        }
+      }
     } catch (err: any) {
       setOnChainStoreResult({
         success: false,
@@ -702,7 +747,8 @@ export default function WalletDnaPage() {
           />
           <button 
             type="submit"
-            className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-[#0c0d10] font-black rounded-xl text-[11px] uppercase tracking-wider transition-all duration-150 cursor-pointer shadow-lg hover:shadow-emerald-500/15 active:scale-95 shrink-0"
+            disabled={!searchVal.trim()}
+            className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 disabled:from-zinc-600 disabled:to-zinc-600 disabled:text-zinc-400 disabled:opacity-50 disabled:cursor-not-allowed text-[#0c0d10] font-black rounded-xl text-[11px] uppercase tracking-wider transition-all duration-150 cursor-pointer shadow-lg hover:shadow-emerald-500/15 active:scale-95 shrink-0"
             id="scythe-search-btn"
           >
             Analyze
@@ -719,7 +765,6 @@ export default function WalletDnaPage() {
               key={index}
               onClick={() => {
                 setSearchVal(item);
-                runReport(item);
               }}
               className="bg-app-bg/85 hover:bg-app-card-hover border border-app-border text-[10.5px] text-app-zinc-text hover:text-app-fg px-3.5 py-1 rounded-full font-mono transition-all cursor-pointer active:scale-95 shadow-sm hover:border-emerald-500/20"
             >
@@ -1124,50 +1169,111 @@ export default function WalletDnaPage() {
               </div>
 
               {/* Portfolio Snapshot Balance Table */}
-              <div className="lg:col-span-5 bento-card p-6 flex flex-col justify-between bg-app-card/45 border border-app-border hover:border-indigo-500/20 shadow-md" id="portfolio-snapshot-card">
-                <div className="flex justify-between items-start mb-4 border-b border-app-border pb-3">
+               <div className="lg:col-span-5 bento-card p-6 flex flex-col justify-between bg-app-card/45 border border-app-border hover:border-indigo-500/20 shadow-md" id="portfolio-snapshot-card">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 border-b border-app-border pb-3">
                   <div>
-                    <span className="text-[9px] font-black text-app-zinc-text uppercase tracking-widest block mb-1">COLD CORES DISTRIBUTION</span>
+                    <span className="text-[9px] font-black text-app-zinc-text uppercase tracking-widest block mb-1">PORTFOLIO VALUATION LEDGER</span>
                     <h3 className="text-sm font-extrabold text-app-fg">Balance Ledger Dynamics</h3>
                   </div>
-                  <span className="text-xs font-mono font-bold bg-app-bg px-2.5 py-1 border border-app-border/85 rounded-lg text-app-zinc-text">
-                    {report.portfolio.length} Assets
-                  </span>
+                  
+                  {/* Toggle Controls */}
+                  <div className="flex items-center bg-app-bg p-0.5 border border-app-border/80 rounded-xl shadow-inner shrink-0">
+                    <button
+                      onClick={() => setPortfolioTab('mantle')}
+                      className={cn(
+                        "px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer",
+                        portfolioTab === 'mantle'
+                          ? "bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/25 text-emerald-400"
+                          : "text-zinc-500 hover:text-app-fg border border-transparent"
+                      )}
+                    >
+                      Mantle
+                    </button>
+                    <button
+                      onClick={() => setPortfolioTab('multichain')}
+                      className={cn(
+                        "px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer",
+                        portfolioTab === 'multichain'
+                          ? "bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/25 text-emerald-400"
+                          : "text-zinc-500 hover:text-app-fg border border-transparent"
+                      )}
+                    >
+                      Multichain
+                    </button>
+                  </div>
                 </div>
 
-                <div className="flex-grow overflow-x-auto">
-                  <table className="w-full text-left border-collapse" id="portfolio-summary-table">
-                    <thead>
-                      <tr className="text-app-zinc-text font-black uppercase border-b border-app-border/40 pb-2 text-[10px] tracking-wider select-none">
-                        <th className="py-2.5 font-bold">Token</th>
-                        <th className="py-2.5 text-right font-bold">Balance</th>
-                        <th className="py-2.5 text-right font-bold">USD Value</th>
-                        <th className="py-2.5 text-right font-bold">Est PnL</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-app-border/20 text-[11px] font-medium">
-                      {report.portfolio.map((item, id) => (
-                        <tr key={id} className="hover:bg-app-bg/30 transition-colors duration-150">
-                          <td className="py-3 font-extrabold text-app-fg">
-                            <div className="flex items-center gap-2">
-                              <span className="bg-app-bg px-2.5 py-1 rounded-lg border border-app-border uppercase font-black text-[10px] tracking-wide shadow-sm">
-                                {item.token}
-                              </span>
-                              <span className="text-[9.5px] text-sky-400 font-mono font-bold">{item.pctOfPortfolio}%</span>
-                            </div>
-                          </td>
-                          <td className="py-3 text-right font-mono font-bold text-app-fg">{item.balance}</td>
-                          <td className="py-3 text-right font-mono font-bold text-app-fg">{formatCurrency(item.usdValue).split('.')[0]}</td>
-                          <td className={cn(
-                            "py-3 text-right font-mono font-bold",
-                            item.isPnlPositive ? "text-app-emerald" : "text-rose-500"
-                          )}>
-                            {item.unrealizedPnl}
-                          </td>
+                <div className="flex-grow overflow-x-auto min-h-[220px]">
+                  {portfolioTab === 'mantle' ? (
+                    <table className="w-full text-left border-collapse" id="portfolio-summary-table">
+                      <thead>
+                        <tr className="text-app-zinc-text font-black uppercase border-b border-app-border/40 pb-2 text-[10px] tracking-wider select-none">
+                          <th className="py-2.5 font-bold">Token</th>
+                          <th className="py-2.5 text-right font-bold">Balance</th>
+                          <th className="py-2.5 text-right font-bold">USD Value</th>
+                          <th className="py-2.5 text-right font-bold">Est PnL</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-app-border/20 text-[11px] font-medium">
+                        {report.portfolio.map((item, id) => (
+                          <tr key={id} className="hover:bg-app-bg/30 transition-colors duration-150">
+                            <td className="py-3 font-extrabold text-app-fg">
+                              <div className="flex items-center gap-2">
+                                <span className="bg-app-bg px-2.5 py-1 rounded-lg border border-app-border uppercase font-black text-[10px] tracking-wide shadow-sm">
+                                  {item.token}
+                                </span>
+                                <span className="text-[9.5px] text-sky-400 font-mono font-bold">{item.pctOfPortfolio}%</span>
+                              </div>
+                            </td>
+                            <td className="py-3 text-right font-mono font-bold text-app-fg">{item.balance}</td>
+                            <td className="py-3 text-right font-mono font-bold text-app-fg">{formatCurrency(item.usdValue).split('.')[0]}</td>
+                            <td className={cn(
+                              "py-3 text-right font-mono font-bold",
+                              item.isPnlPositive ? "text-app-emerald" : "text-rose-500"
+                            )}>
+                              {item.unrealizedPnl}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <table className="w-full text-left border-collapse" id="multichain-portfolio-table">
+                      <thead>
+                        <tr className="text-app-zinc-text font-black uppercase border-b border-app-border/40 pb-2 text-[10px] tracking-wider select-none">
+                          <th className="py-2.5 font-bold">Chain Network</th>
+                          <th className="py-2.5 text-right font-bold">Native Bal</th>
+                          <th className="py-2.5 text-right font-bold">USD Value</th>
+                          <th className="py-2.5 text-right font-bold">Exchange Rate</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-app-border/20 text-[11px] font-medium">
+                        {(report.multichainBalances || []).map((item, id) => (
+                          <tr key={id} className="hover:bg-app-bg/30 transition-colors duration-150">
+                            <td className="py-3 font-extrabold text-app-fg">
+                              <span className="bg-app-bg/75 px-2.5 py-1 rounded-lg border border-app-border font-bold text-[10px] tracking-wide inline-block shadow-sm">
+                                {item.chainName}
+                              </span>
+                            </td>
+                            <td className="py-3 text-right font-mono font-bold text-app-fg">
+                              {item.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })} <span className="text-zinc-500 font-sans text-[10px]">{item.symbol}</span>
+                            </td>
+                            <td className="py-3 text-right font-mono font-bold text-app-fg">
+                              {formatCurrency(item.valueUsd).split('.')[0]}
+                            </td>
+                            <td className="py-3 text-right font-mono font-bold text-zinc-400">
+                              ${item.priceUsd.toLocaleString()}
+                            </td>
+                          </tr>
+                        ))}
+                        {(!report.multichainBalances || report.multichainBalances.length === 0) && (
+                          <tr>
+                            <td colSpan={4} className="py-8 text-center text-zinc-500 font-medium">No live multichain indexes retrieved.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
 
                 <div className="mt-4 pt-3.5 border-t border-app-border/40 text-[10px] text-app-zinc-text font-bold flex items-center justify-between">

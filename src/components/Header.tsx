@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
-import { Sun, Moon, Menu, X, ChevronDown, Calendar, Wallet } from "lucide-react";
+import { Sun, Moon, Menu, X, ChevronDown, Calendar } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 
 interface HeaderProps {
@@ -17,7 +17,7 @@ export function Header({ isDarkMode, toggleTheme, dateRangeText = "01 Apr, 2026 
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [walletConnected, setWalletConnected] = useState(false);
+
 
   // Close dropdowns on route changes
   useEffect(() => {
@@ -26,7 +26,7 @@ export function Header({ isDarkMode, toggleTheme, dateRangeText = "01 Apr, 2026 
   }, [pathname]);
 
   const mainNavItems = [
-    { label: "Dashboard", href: "/" },
+    { label: "Home", href: "/" },
     { label: "Smart Money", href: "/dashboard" },
     { label: "Wallet DNA", href: "/dna" },
     { label: "Alpha Stats", href: "/stats" },
@@ -34,7 +34,6 @@ export function Header({ isDarkMode, toggleTheme, dateRangeText = "01 Apr, 2026 
 
   const moreNavItems = [
     { label: "Alpha Replay", href: "/replay-v2" },
-    { label: "Validation Center", href: "/performance" },
   ];
 
   const isMoreActive = moreNavItems.some(item => item.href === pathname);
@@ -146,6 +145,14 @@ export function Header({ isDarkMode, toggleTheme, dateRangeText = "01 Apr, 2026 
 
         {/* RIGHT - Actions */}
         <div className="flex items-center gap-1.5 sm:gap-3">
+          {/* Try Demo Button */}
+          <Link
+            href="/dashboard"
+            className="bg-[#10B981] hover:bg-[#0da471] text-white px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all active:scale-95 shadow-sm uppercase shrink-0"
+          >
+            Try Demo
+          </Link>
+
           {/* Theme Toggle Button */}
           <button
             onClick={toggleTheme}
@@ -161,26 +168,7 @@ export function Header({ isDarkMode, toggleTheme, dateRangeText = "01 Apr, 2026 
             <span className="text-[9px] font-mono text-[#10B981] uppercase tracking-wider font-bold">MANTLE NETWORK OK</span>
           </div>
 
-          {/* Connect Wallet Button */}
-          <button
-            onClick={() => setWalletConnected(!walletConnected)}
-            className="bg-[#10B981] hover:brightness-[1.1] text-[#080B10] font-sans font-semibold rounded-lg px-2 sm:px-4 py-1.5 text-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1 sm:gap-1.5"
-          >
-            <Wallet className="w-3.5 h-3.5" />
-            <span>
-              {walletConnected ? (
-                <>
-                  <span className="hidden xs:inline">0x7bf...c32</span>
-                  <span className="inline xs:hidden">0x7bf...</span>
-                </>
-              ) : (
-                <>
-                  <span className="hidden xs:inline">Connect Wallet</span>
-                  <span className="inline xs:hidden">Connect</span>
-                </>
-              )}
-            </span>
-          </button>
+
 
           {/* Mobile Menu trigger button */}
           <button
@@ -288,19 +276,7 @@ export function Header({ isDarkMode, toggleTheme, dateRangeText = "01 Apr, 2026 
 
               {/* Mobile Drawer Bottom Info */}
               <div className="border-t border-[var(--border)] pt-4 flex flex-col gap-2.5">
-                {/* Mobile Drawer Connect Wallet CTA */}
-                <div className="flex flex-col gap-1.5 mb-1 bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl p-3">
-                  <span className="text-[9px] uppercase font-bold tracking-wider text-[var(--app-muted)]">
-                    Identity
-                  </span>
-                  <button
-                    onClick={() => setWalletConnected(!walletConnected)}
-                    className="w-full bg-[#10B981] hover:brightness-[1.1] text-[#080B10] font-sans font-semibold rounded-lg py-2 text-xs transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    <Wallet className="w-3.5 h-3.5" />
-                    <span>{walletConnected ? "0x7bf...c32 (Connected)" : "Connect Wallet"}</span>
-                  </button>
-                </div>
+
 
                 <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
                   <span>Theme State</span>

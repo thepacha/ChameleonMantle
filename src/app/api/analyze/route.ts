@@ -3,18 +3,14 @@ import { OpenAI } from 'openai';
 
 export async function POST(req: Request) {
   try {
-    const apiKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY || '';
+    const apiKey = process.env.GROQ_API_KEY || '';
     if (!apiKey) {
-      return NextResponse.json({ error: 'API key is not configured' }, { status: 500 });
+      return NextResponse.json({ error: 'Groq API key is not configured' }, { status: 500 });
     }
 
     const openai = new OpenAI({
-      baseURL: "https://openrouter.ai/api/v1",
+      baseURL: "https://api.groq.com/openai/v1",
       apiKey,
-      defaultHeaders: {
-        "HTTP-Referer": process.env.APP_URL || "https://ai.studio/build",
-        "X-Title": "Chameleon",
-      }
     });
 
     const body = await req.json();
@@ -26,7 +22,14 @@ export async function POST(req: Request) {
     
     Provide a detailed behavioral assessment in strictly valid JSON format.
     The response must be strictly formatted as JSON to be directly passed as arguments to smart contract function calls.
-    Do NOT include any markdown formatting (like \`\`\`json or backticks) in your output. Just return the raw JSON object.
+    
+    CRITICAL CONSTRAINTS:
+    - You MUST NEVER output your internal reasoning, chain-of-thought, or use <think> tags under any circumstances.
+    - Do NOT wrap the response in markdown blocks (no \`\`\`json or \`\`\`), do NOT include any backticks or markdown formatting, and do NOT output any introductory or explanatory text. It must be directly parseable.
+    - All text explanation fields in the output JSON ("insight", "explanation", "predictedMove") MUST be extremely concise: strictly 2 short sentences maximum.
+    - Total length of any text explanation field must not exceed 30 words.
+    - Be punchy, direct, and focus ONLY on the core metrics without any fluff, storytelling, or filler words.
+    - Deliver the final JSON immediately.
 
     REQUIRED SCHEMA:
     {
@@ -40,7 +43,7 @@ export async function POST(req: Request) {
     }`;
 
     const completion = await openai.chat.completions.create({
-      model: "google/gemma-4-31b-it:free",
+      model: "qwen/qwen3-32b",
       messages: [
         {
           role: "user",
@@ -54,6 +57,10 @@ export async function POST(req: Request) {
     
     function cleanAndParseJson(text: string): any {
       let cleaned = text.trim();
+      // Ensure we remove any <think> blocks if the model outputs them anyway
+      if (cleaned.includes("</think>")) {
+        cleaned = cleaned.substring(cleaned.lastIndexOf("</think>") + 8).trim();
+      }
       if (cleaned.startsWith("```")) {
         cleaned = cleaned.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
       }
@@ -64,7 +71,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(parsedData);
   } catch (error) {
-    console.error('OpenRouter error:', error);
+    console.error('Groq error:', error);
     return NextResponse.json({ error: 'Failed to analyze data' }, { status: 500 });
   }
 }

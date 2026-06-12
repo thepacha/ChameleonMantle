@@ -35,10 +35,12 @@ import {
   Share2,
   Eye,
   TrendingDown,
-  Cpu
+  Cpu,
+  X
 } from "lucide-react";
 import { Header } from "@/src/components/Header";
 import { cn } from "@/src/lib/utils";
+import { trackSignalDispatch, trackWalletScan } from "@/src/lib/usage";
 
 // Define structured schemas for visual cluster networks
 interface Node {
@@ -71,11 +73,13 @@ export default function SmartMoneyDashboard() {
   const [earlyAdopters, setEarlyAdopters] = useState<any[]>([]);
   const [deployers, setDeployers] = useState<any[]>([]);
   const [recentMoves, setRecentMoves] = useState<any[]>([]);
+  const [onChainAnomalies, setOnChainAnomalies] = useState<any[]>([]);
+  const [selectedAnomaly, setSelectedAnomaly] = useState<any | null>(null);
   const [blocksCount, setBlocksCount] = useState(0);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
 
   // Tab management - Smart Money, Anomaly Radar, Cluster Map, Live Intelligence Feed
-  const [navigationTab, setNavigationTab] = useState<"directory" | "feed" | "anomalies" | "clusters">("feed");
+  const [navigationTab, setNavigationTab] = useState<"directory" | "anomalies">("anomalies");
   
   // Tab inside Directory (whales, early adopters, deployers)
   const [directorySubTab, setDirectorySubTab] = useState<"whales" | "adopters" | "deployers">("whales");
@@ -91,6 +95,8 @@ export default function SmartMoneyDashboard() {
 
   const [isSignallingOnChain, setIsSignallingOnChain] = useState(false);
   const [onChainSignalResult, setOnChainSignalResult] = useState<any | null>(null);
+  const [selectedWalletMultichainBalances, setSelectedWalletMultichainBalances] = useState<any[] | null>(null);
+  const [loadingMultichain, setLoadingMultichain] = useState(false);
 
   // Market Price, AI Insight, and RPC connection details
   const [marketData, setMarketData] = useState<{
@@ -205,66 +211,6 @@ export default function SmartMoneyDashboard() {
     ];
   }, [whales, deployers, earlyAdopters]);
 
-  // Real-time anomalies detected dynamically or parsed from real data
-  const onChainAnomalies = useMemo(() => {
-    const list = [];
-    
-    // Scan real deployers and flag them
-    if (deployers.length > 0) {
-      list.push({
-        wallet: deployers[0].deployer,
-        type: "Rapid Contract Deployments",
-        severity: "Medium" as const,
-        score: 72,
-        timestamp: deployers[0].deploymentDate || "Just now",
-        reason: `Wallet triggered a contract deployment to address ${deployers[0].contractAddress.slice(0, 10)}... and initiated variables within block #${deployers[0].deploymentBlock}.`
-      });
-    }
-
-    // Scan real whales and flag them
-    const activeWhales = whales.filter(w => w.mntBalance > 50000);
-    if (activeWhales.length > 0) {
-      list.push({
-        wallet: activeWhales[0].address,
-        type: "Whale Liquidity Accumulation",
-        severity: "High" as const,
-        score: 86,
-        timestamp: "5m ago",
-        reason: `Wallet holds ${Math.round(activeWhales[0].mntBalance).toLocaleString()} MNT and executed heavy token interactions on current blocks.`
-      });
-    }
-
-    // Generic realistic anomalies
-    list.push({
-      wallet: "0x09bc86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-      type: "Abnormal Transfer Volume",
-      severity: "Critical" as const,
-      score: 97,
-      timestamp: "12m ago",
-      reason: "Transfer volume increased 1,250% compared to the wallet's historical average. Over 150,000 WMNT reassigned in single txn."
-    });
-
-    list.push({
-      wallet: "0x78c1b4910cf85b42d76a5b78f4ea492eb9c24942",
-      type: "Dormant Whale Awakening",
-      severity: "High" as const,
-      score: 92,
-      timestamp: "24m ago",
-      reason: "Wallet was inactive for 187 days on Mantle and suddenly executed 23 large transactions within the last observed blocks."
-    });
-
-    list.push({
-      wallet: "0xcda47299702225e6f657b9d1217e99fd36e59e13",
-      type: "Network Outlier Deviation",
-      severity: "Low" as const,
-      score: 41,
-      timestamp: "1h ago",
-      reason: "Unusual multi-contract loop execution sequence triggered inside single block limit. Likely advanced yield arbitrage bot."
-    });
-
-    return list;
-  }, [whales, deployers]);
-
   // Unified Live Intelligence Feed (Arkham and Bloomberg Style stream)
   const intelligenceFeed = useMemo(() => {
     const feed = [];
@@ -284,13 +230,17 @@ export default function SmartMoneyDashboard() {
 
     // Combine anomalies
     onChainAnomalies.forEach((a, index) => {
+      const anomalyTypeLabel = a.anomalyType || a.type || "BEHAVIORAL DEVIATION";
+      const severityLabel = typeof a.severity === 'number' ? `${a.severity} Severity` : (a.severity || "High");
+      const isCritical = a.severity === "Critical" || (typeof a.severity === 'number' && a.severity >= 90);
+      
       feed.push({
         id: `feed-anomaly-${index}`,
         type: "anomaly",
-        message: `Real-time anomaly radar detected [${a.type}] from wallet ${a.wallet.slice(0, 8)}... (${a.severity} Severity, Score: ${a.score})`,
+        message: a.description || `Real-time anomaly radar detected [${anomalyTypeLabel}] from wallet ${a.wallet.slice(0, 8)}... (${severityLabel})`,
         tag: "ANOMALY ALARM",
-        badgeColor: a.severity === "Critical" ? "bg-red-500/10 text-red-500 border-red-500/20 animate-pulse" : "bg-amber-500/10 text-amber-500 border-amber-500/20",
-        timestamp: a.timestamp,
+        badgeColor: isCritical ? "bg-red-500/10 text-red-500 border-red-500/20 animate-pulse" : "bg-amber-500/10 text-amber-500 border-amber-500/20",
+        timestamp: a.timestamp || "Just now",
         rawTime: Date.now() - (index + 1) * 300000
       });
     });
@@ -443,6 +393,25 @@ export default function SmartMoneyDashboard() {
     }
   };
 
+  const fetchMultichainBalances = async (address: string) => {
+    setSelectedWalletMultichainBalances(null);
+    setLoadingMultichain(true);
+    try {
+      const res = await fetch(`/api/wallet?address=${address}`);
+      if (res.ok) {
+        const d = await res.json();
+        setSelectedWalletMultichainBalances(d.multichainBalances || []);
+      } else {
+        setSelectedWalletMultichainBalances([]);
+      }
+    } catch (e) {
+      console.error("Failed to load multichain balances for side panel:", e);
+      setSelectedWalletMultichainBalances([]);
+    } finally {
+      setLoadingMultichain(false);
+    }
+  };
+
   // Perform Server-Side AI Forensics Profile generate content
   const handleAnalyzeWithAI = async (address: string) => {
     setGeneratingAiProfile(true);
@@ -509,6 +478,12 @@ export default function SmartMoneyDashboard() {
     setAiProfile(null);
     setOnChainSignalResult(null);
     fetchConviction(address);
+    fetchMultichainBalances(address);
+    try {
+      trackWalletScan(address);
+    } catch (e) {
+      console.warn("Tracking scan failed:", e);
+    }
   };
 
   const handleAnchorSignalOnChain = async () => {
@@ -526,6 +501,20 @@ export default function SmartMoneyDashboard() {
       });
       const data = await response.json();
       setOnChainSignalResult(data);
+      if (data && data.success) {
+        try {
+          trackSignalDispatch(
+            selectedWallet,
+            data.signal?.signalType || 'accumulation',
+            data.signal?.confidence || 85,
+            data.signal?.explanation || '',
+            data.txHash || '',
+            data.blockNumber || 0
+          );
+        } catch (trackErr) {
+          console.warn("Signal dispatch tracking failed:", trackErr);
+        }
+      }
     } catch (err: any) {
       setOnChainSignalResult({
         success: false,
@@ -536,6 +525,22 @@ export default function SmartMoneyDashboard() {
     }
   };
 
+  // Handle manual full-refresh of all RPC and market data
+  const handleManualRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        fetchAllData(true),
+        fetchMarketAndRpcData()
+      ]);
+      showToast("Terminal records and market price synchronized!");
+    } catch (e) {
+      console.error("Refresh failed:", e);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   // Fetch all live JSON RPC feeds
   const fetchAllData = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoading(true);
@@ -543,11 +548,12 @@ export default function SmartMoneyDashboard() {
     setError(null);
 
     try {
-      const [whalesRes, adoptersRes, deployersRes, movesRes] = await Promise.all([
+      const [whalesRes, adoptersRes, deployersRes, movesRes, anomaliesRes] = await Promise.all([
         fetch("/api/smart-money/whales"),
         fetch("/api/smart-money/early-adopters"),
         fetch("/api/smart-money/deployers"),
         fetch("/api/smart-money/recent-moves"),
+        fetch("/api/smart-money/anomalies"),
       ]);
 
       if (!whalesRes.ok || !adoptersRes.ok || !deployersRes.ok || !movesRes.ok) {
@@ -561,14 +567,23 @@ export default function SmartMoneyDashboard() {
         movesRes.json(),
       ]);
 
-      if (whalesData.error || adoptersData.error || deployersData.error || movesData.error) {
-        throw new Error(whalesData.error || adoptersData.error || "Unable to retrieve live Mantle data.");
+      let anomalyList = [];
+      try {
+        if (anomaliesRes && anomaliesRes.ok) {
+          const anomJSON = await anomaliesRes.json();
+          if (anomJSON.success) {
+            anomalyList = anomJSON.anomalies || [];
+          }
+        }
+      } catch (anomErr) {
+        console.error("Failed to parse live anomalies from engine endpoint:", anomErr);
       }
 
       setWhales(whalesData.data || []);
       setEarlyAdopters(adoptersData.data || []);
       setDeployers(deployersData.data || []);
       setRecentMoves(movesData.data || []);
+      setOnChainAnomalies(anomalyList);
       setBlocksCount(whalesData.blocksCount || 0);
       setLastUpdated(whalesData.lastUpdated || Date.now());
 
@@ -638,20 +653,12 @@ export default function SmartMoneyDashboard() {
 
   useEffect(() => {
     fetchAllData();
-
-    const interval = setInterval(() => {
-      fetchAllData(true);
-    }, 30000);
-
-    return () => clearInterval(interval);
+    // Disabled background interval auto-refresh as requested
   }, []);
 
   useEffect(() => {
     fetchMarketAndRpcData();
-    const interval = setInterval(() => {
-      fetchMarketAndRpcData();
-    }, 60000);
-    return () => clearInterval(interval);
+    // Disabled background interval auto-refresh as requested
   }, [fetchMarketAndRpcData]);
 
   useEffect(() => {
@@ -709,7 +716,7 @@ export default function SmartMoneyDashboard() {
             </div>
 
             <button
-              onClick={() => fetchAllData()}
+              onClick={handleManualRefresh}
               disabled={loading || refreshing}
               className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-semibold rounded-xl px-4 py-2 text-xs transition-all flex items-center gap-2 border border-emerald-500 shadow-sm active:scale-95 cursor-pointer"
             >
@@ -875,18 +882,6 @@ export default function SmartMoneyDashboard() {
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-1.5 shadow-sm gap-2">
                 <div className="flex flex-wrap gap-1">
                   <button
-                    onClick={() => setNavigationTab("feed")}
-                    className={cn(
-                      "px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5",
-                      navigationTab === "feed"
-                        ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
-                        : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
-                    )}
-                  >
-                    <Activity className="w-3.5 h-3.5" />
-                    <span>Live Intel Feed</span>
-                  </button>
-                  <button
                     onClick={() => setNavigationTab("anomalies")}
                     className={cn(
                       "px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5",
@@ -897,18 +892,6 @@ export default function SmartMoneyDashboard() {
                   >
                     <ShieldAlert className="w-3.5 h-3.5" />
                     <span>AI Anomaly Radar</span>
-                  </button>
-                  <button
-                    onClick={() => setNavigationTab("clusters")}
-                    className={cn(
-                      "px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5",
-                      navigationTab === "clusters"
-                        ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/15"
-                        : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
-                    )}
-                  >
-                    <Cpu className="w-3.5 h-3.5" />
-                    <span>Behavioral Clusters</span>
                   </button>
                   <button
                     onClick={() => setNavigationTab("directory")}
@@ -937,71 +920,6 @@ export default function SmartMoneyDashboard() {
                 </form>
               </div>
 
-              {/* RENDER VIEW: TAB 1: LIVE INTELLIGENCE FEED */}
-              {navigationTab === "feed" && (
-                <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-5 shadow-sm flex flex-col gap-4 animate-fadeIn">
-                  <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
-                    <div className="flex items-center gap-2">
-                      <Cpu className="w-5 h-5 text-emerald-500" />
-                      <h2 className="text-sm font-black uppercase tracking-wider text-zinc-900 dark:text-zinc-200 font-mono">
-                        Mantle On-Chain Intelligence Stream
-                      </h2>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 font-mono text-[10px] text-zinc-500">
-                      <div className="w-2.5 h-2.5 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin" />
-                      <span>Updates Streaming ({timeLeft}s)</span>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-[var(--app-muted)] -mt-1 leading-relaxed">
-                    This terminal feed merges real-time transactions, smart money moves, newly discovered builder clusters, block contract creations, and flagged anomalies on Mantle.
-                  </p>
-
-                  <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto pr-1">
-                    {intelligenceFeed.map((item) => (
-                      <div
-                        key={item.id}
-                        className="p-3 bg-[var(--bg-base)] hover:bg-[var(--bg-hover)] border border-[var(--border)] hover:border-emerald-500/20 rounded-xl transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group cursor-pointer"
-                        onClick={() => {
-                          // Extract wallet address if mentioned
-                          const hexRegex = /(0x[a-fA-F0-9]{40})/g;
-                          const found = item.message.match(hexRegex);
-                          if (found && found.length > 0) {
-                            handleSelectWallet(found[0]);
-                          }
-                        }}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="mt-1 shrink-0">
-                            {item.type === "cluster" ? <Layers className="w-4 h-4 text-emerald-500" /> :
-                             item.type === "anomaly" ? <ShieldAlert className="w-4 h-4 text-amber-500 animate-pulse" /> :
-                             <Zap className="w-4 h-4 text-purple-500" />}
-                          </div>
-                          
-                          <div className="space-y-1">
-                            <p className="text-xs text-[var(--text-primary)] font-medium leading-relaxed group-hover:text-emerald-500 transition-colors">
-                              {item.message}
-                            </p>
-                            <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold text-[var(--app-muted)] uppercase">
-                              <span className={cn("px-2 py-0.5 rounded border border-solid font-bold uppercase", item.badgeColor)}>
-                                {item.tag}
-                              </span>
-                              <span>&bull;</span>
-                              <span>Mantle RPC Data Log</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <span className="text-[10px] font-mono text-[var(--app-muted)] font-bold shrink-0 self-end sm:self-center">
-                          {item.timestamp}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* RENDER VIEW: TAB 2: REAL-TIME ANOMALY DETECTION */}
               {navigationTab === "anomalies" && (
                 <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-5 shadow-sm flex flex-col gap-4 animate-fadeIn">
@@ -1022,265 +940,78 @@ export default function SmartMoneyDashboard() {
                     Radar system continuously evaluating block sequences for volume spikes, reactivation of dormant accounts, contract deployment floods, and abnormal transfer sizes.
                   </p>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {onChainAnomalies.map((anom, idx) => (
-                      <div
-                        key={idx}
-                        onClick={() => handleSelectWallet(anom.wallet)}
-                        className={cn(
-                          "p-4 bg-[var(--bg-base)] border border-solid rounded-xl flex flex-col gap-3 hover:-translate-y-0.5 transition-all cursor-pointer group",
-                          anom.severity === "Critical" ? "border-red-500/20 hover:border-red-500/40" :
-                          anom.severity === "High" ? "border-amber-500/20 hover:border-amber-500/40" :
-                          "border-[var(--border)] hover:border-emerald-500/30"
-                        )}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div className="space-y-0.5">
-                            <span className={cn(
-                              "text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border",
-                              anom.severity === "Critical" ? "bg-red-500/10 text-red-500 border-red-500/20" :
-                              anom.severity === "High" ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
-                              anom.severity === "Medium" ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/15" :
-                              "bg-zinc-500/10 text-zinc-500 border-zinc-500/15"
-                            )}>
-                              {anom.severity} Severity
-                            </span>
-                            <h3 className="text-xs font-black uppercase tracking-tight text-zinc-800 dark:text-zinc-200 mt-1.5 group-hover:text-emerald-500">
-                              {anom.type}
-                            </h3>
-                          </div>
-
-                          <div className="flex flex-col items-end">
-                            <span className="text-lg font-black font-mono text-zinc-900 dark:text-white leading-none">
-                              {anom.score}
-                            </span>
-                            <span className="text-[9px] text-[var(--app-muted)] uppercase font-bold mt-0.5 font-sans">Anomaly Score</span>
-                          </div>
-                        </div>
-
-                        <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-2.5 text-[11px] leading-relaxed font-medium">
-                          <span className="text-[10px] uppercase font-bold text-[var(--app-muted)] block mb-1">Reason:</span>
-                          {anom.reason}
-                        </div>
-
-                        <div className="flex items-center justify-between text-[10px] text-[var(--app-muted)] font-bold border-t border-[var(--border)]/30 pt-2.5 mt-1">
-                          <span className="font-mono">{anom.wallet.slice(0, 10)}...{anom.wallet.slice(-8)}</span>
-                          <span>{anom.timestamp}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* RENDER VIEW: TAB 3: BEHAVIORAL CLUSTERS & RELATIONSHIP GRAPH */}
-              {navigationTab === "clusters" && (
-                <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-5 shadow-sm flex flex-col gap-5 animate-fadeIn">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[var(--border)] pb-3 gap-2">
-                    <div className="flex items-center gap-2">
-                      <Layers className="w-5 h-5 text-purple-500" />
-                      <h2 className="text-sm font-black uppercase tracking-wider text-zinc-900 dark:text-zinc-200 font-mono">
-                        Mantle Wallet Cluster Core
-                      </h2>
+                  {onChainAnomalies.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed border-[var(--border)] rounded-xl bg-[var(--bg-base)]">
+                      <ShieldAlert className="w-12 h-12 text-zinc-400 animate-pulse mb-3" />
+                      <p className="text-xs font-mono font-bold text-zinc-500 uppercase tracking-wider">
+                        Guardian active: Listening for real-time Mantle blocks...
+                      </p>
+                      <p className="text-[10px] text-zinc-400 mt-1 uppercase max-w-sm leading-relaxed">
+                        No transactions exceeding the alert rules have occurred on-chain since initialization. Run block transfers to register alarms!
+                      </p>
                     </div>
-
-                    <span className="text-[10px] bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/15 px-2.5 py-0.5 rounded uppercase tracking-wide font-black">
-                      AI Behavioral Clustering Map
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-[var(--app-muted)] -mt-2 leading-relaxed">
-                    Rather than relying on simple static address tags, our behavioral algorithm classifies wallets into interconnected nodes according to transaction weight, frequency, counterparts, and contract interactions.
-                  </p>
-
-                  {/* VISUAL SVG CLUSTER NETWORK RELATIONSHIP GRAPH */}
-                  <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-2xl p-4 flex flex-col gap-3 relative h-[380px] overflow-hidden group select-none">
-                    <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg px-2.5 py-1 text-[10px] font-mono text-[var(--text-secondary)]">
-                      <Sparkles className="w-3 h-3 text-emerald-500" />
-                      <span>Interactive Network Map</span>
-                    </div>
-
-                    {/* SVG GRAPH BLOCK */}
-                    <svg className="w-full h-full" viewBox="0 0 600 320" preserveAspectRatio="xMidYMid meet">
-                      <style>{`
-                        @keyframes flow-dash {
-                          to {
-                            stroke-dashoffset: -20;
-                          }
-                        }
-                        .edge-flow {
-                          stroke-dasharray: 5, 5;
-                          animation: flow-dash 1s linear infinite;
-                        }
-                      `}</style>
-
-                      {/* Connections Draw */}
-                      {visualNetwork.edges.map((edge, index) => {
-                        const sNode = visualNetwork.nodes.find(n => n.id === edge.source);
-                        const tNode = visualNetwork.nodes.find(n => n.id === edge.target);
-                        if (!sNode || !tNode) return null;
-
-                        const isAnimated = edge.animated;
-                        const isSecondary = edge.type === "secondary";
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {onChainAnomalies.map((anom, idx) => {
+                        const typeLabel = anom.anomalyType || anom.type || "DEVIATION ALERT";
+                        const displayReason = anom.description || anom.reason || "Under evaluation by Chameleon on-chain security protocol.";
+                        const score = typeof anom.severity === 'number' ? anom.severity : 80;
+                        const displayBlock = anom.blockNumber ? `#${anom.blockNumber}` : "Pending Gossip";
+                        const isCritical = score >= 90;
+                        const isHigh = score >= 80;
 
                         return (
-                          <g key={index}>
-                            <line
-                              x1={sNode.x}
-                              y1={sNode.y}
-                              x2={tNode.x}
-                              y2={tNode.y}
-                              stroke={isSecondary ? "var(--border)" : "#10B981"}
-                              strokeOpacity={isSecondary ? 0.25 : 0.4}
-                              strokeWidth={isSecondary ? 1.5 : 2}
-                              strokeDasharray={isSecondary ? "4,4" : undefined}
-                              className={isAnimated ? "edge-flow" : ""}
-                            />
-                          </g>
-                        );
-                      })}
-
-                      {/* Nodes Draw */}
-                      {visualNetwork.nodes.map((node) => {
-                        const isSelected = selectedNode?.id === node.id;
-                        const isHovered = hoveredNode?.id === node.id;
-                        const isHub = node.type === "cluster";
-                        
-                        let color = "#10B981"; // default emerald/green
-                        if (node.group === "Whales") color = "#3B82F6"; // blue
-                        if (node.group === "Traders") color = "#EF4444"; // red
-                        if (node.group === "Builders") color = "#8B5CF6"; // purple
-
-                        return (
-                          <g
-                            key={node.id}
-                            transform={`translate(${node.x},${node.y})`}
-                            className="cursor-pointer"
-                            onMouseEnter={() => setHoveredNode(node)}
-                            onMouseLeave={() => setHoveredNode(null)}
-                            onClick={() => {
-                              setSelectedNode(node);
-                              if (node.type === "wallet") {
-                                const cleanAddr = node.details;
-                                if (cleanAddr) handleSelectWallet(cleanAddr);
-                              } else {
-                                showToast(`Selected cluster hub: ${node.name}`);
-                              }
-                            }}
+                          <div
+                            key={anom.id || idx}
+                            onClick={() => setSelectedAnomaly(anom)}
+                            className={cn(
+                              "p-4 bg-[var(--bg-base)] border border-solid rounded-xl flex flex-col gap-3 hover:-translate-y-0.5 transition-all cursor-pointer group animate-fadeIn",
+                              isCritical ? "border-red-500/20 hover:border-red-500/40" :
+                              isHigh ? "border-amber-500/20 hover:border-amber-500/40" :
+                              "border-[var(--border)] hover:border-emerald-500/30"
+                            )}
                           >
-                            {/* Glow behind */}
-                            <circle
-                              r={node.size + (isHovered || isSelected ? 4 : 2)}
-                              fill={color}
-                              fillOpacity={isHovered || isSelected ? 0.25 : 0.1}
-                            />
-                            
-                            {/* Inner body */}
-                            <circle
-                              r={node.size / 2}
-                              fill={isHub ? "var(--bg-card)" : color}
-                              stroke={color}
-                              strokeWidth={isHub ? 3 : 1.5}
-                            />
+                            <div className="flex justify-between items-start">
+                              <div className="space-y-0.5">
+                                <span className={cn(
+                                  "text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border leading-none inline-block",
+                                  isCritical ? "bg-red-500/10 text-red-500 border-red-500/20" :
+                                  isHigh ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
+                                  "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/15"
+                                )}>
+                                  {score} Severity level
+                                </span>
+                                <h3 className="text-xs font-black uppercase tracking-tight text-zinc-900 dark:text-white mt-2 group-hover:text-emerald-500">
+                                  {typeLabel}
+                                </h3>
+                              </div>
 
-                            {/* Label */}
-                            <text
-                              y={node.size / 2 + 12}
-                              textAnchor="middle"
-                              fill="var(--text-primary)"
-                              className="text-[9px] font-bold font-mono"
-                            >
-                              {node.name}
-                            </text>
-                          </g>
+                              <div className="flex flex-col items-end shrink-0">
+                                <span className="text-lg font-black font-mono text-zinc-900 dark:text-white leading-none">
+                                  {score}
+                                </span>
+                                <span className="text-[9px] text-[var(--app-muted)] uppercase font-bold mt-0.5 font-sans">Anomaly Score</span>
+                              </div>
+                            </div>
+
+                            <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-2.5 text-[11px] leading-relaxed font-semibold text-zinc-700 dark:text-zinc-300">
+                              <span className="text-[10px] uppercase font-bold text-[var(--app-muted)] block mb-1">Reason:</span>
+                              {displayReason}
+                            </div>
+
+                            <div className="flex items-center justify-between text-[10px] text-[var(--app-muted)] font-bold border-t border-[var(--border)]/30 pt-2.5 mt-1">
+                              <span className="font-mono">Address: {anom.wallet.slice(0, 10)}...{anom.wallet.slice(-8)}</span>
+                              <span className="font-mono">Block {displayBlock}</span>
+                            </div>
+                          </div>
                         );
                       })}
-                    </svg>
-
-                    {/* Nodes Status Overlay Widget */}
-                    <div className="absolute bottom-3 right-3 left-3 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl p-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 shadow-md">
-                      {hoveredNode || selectedNode ? (
-                        <>
-                          <div className="space-y-0.5">
-                            <span className="text-[9px] uppercase font-bold text-emerald-500 font-mono block">Node Target Analyzed</span>
-                            <h4 className="text-xs font-bold text-[var(--text-primary)]">{hoveredNode?.name || selectedNode?.name}</h4>
-                            <p className="text-[10px] text-[var(--text-secondary)] font-medium max-w-sm font-mono truncate">
-                              {hoveredNode?.details || selectedNode?.details}
-                            </p>
-                          </div>
-
-                          {hoveredNode?.type === "wallet" && (
-                            <button
-                              onClick={() => {
-                                const addr = hoveredNode?.details;
-                                if (addr) handleSelectWallet(addr);
-                              }}
-                              className="bg-emerald-500 text-white text-[10px] font-bold py-1 px-3.5 rounded-lg border border-emerald-500 shadow-sm hover:brightness-[1.1] transition-all cursor-pointer"
-                            >
-                              Profile Address
-                            </button>
-                          )}
-                        </>
-                      ) : (
-                        <div className="text-[10px] text-[var(--app-muted)] font-semibold flex items-center gap-1.5 z-10">
-                          <Info className="w-3.5 h-3.5 text-emerald-500/80 shrink-0" />
-                          <span>Hover or Click any network node to display entity credentials. Drag to scroll network relationships.</span>
-                        </div>
-                      )}
                     </div>
-                  </div>
-
-                  {/* AUTOMATED CLUSTERS DECK */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {walletClusters.map((cluster) => {
-                      const Icon = cluster.icon;
-
-                      return (
-                        <div
-                          key={cluster.id}
-                          className="bg-[var(--bg-base)] border border-[var(--border)] hover:border-purple-500/30 rounded-xl p-4 flex flex-col justify-between gap-4 transition-all hover:-translate-y-0.5"
-                        >
-                          <div className="flex justify-between items-start">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0">
-                                <Icon className="w-4 h-4" />
-                              </div>
-
-                              <div className="space-y-0.5">
-                                <h3 className="text-xs font-black uppercase text-zinc-900 dark:text-zinc-200">{cluster.name}</h3>
-                                <span className="text-[9px] text-[var(--app-muted)] font-bold uppercase tracking-wider font-mono">Cluster ID: {cluster.id}</span>
-                              </div>
-                            </div>
-
-                            <div className="text-right">
-                              <span className="text-[10px] font-mono font-black text-purple-600 dark:text-purple-400 block">{cluster.confidence}% Conf.</span>
-                              <span className="text-[9px] text-[var(--app-muted)] uppercase font-semibold font-sans">{cluster.wallets.length} Wallets</span>
-                            </div>
-                          </div>
-
-                          <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed font-semibold">
-                            {cluster.summary}
-                          </p>
-
-                          <div className="space-y-1.5 border-t border-[var(--border)]/40 pt-3">
-                            <span className="text-[9px] uppercase font-bold text-purple-600 dark:text-purple-400 font-mono block">Cluster Traits</span>
-                            <div className="flex flex-wrap gap-1.5">
-                              {cluster.characteristics.map((trait, tIdx) => (
-                                <span
-                                  key={tIdx}
-                                  className="text-[9px] font-semibold text-[var(--text-secondary)] bg-[var(--bg-card)] border border-[var(--border)] px-2 py-0.5 rounded"
-                                >
-                                  {trait}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  )}
                 </div>
               )}
+
+
 
               {/* RENDER VIEW: TAB 4: DIRECTORY INDEX (REAL WHALES, ADOPTERS, DEPLOYERS WITH NESTED SUB TABS) */}
               {navigationTab === "directory" && (
@@ -1359,9 +1090,17 @@ export default function SmartMoneyDashboard() {
                               >
                                 <td className="py-2 px-4 whitespace-nowrap">
                                   <div className="flex items-center gap-2">
-                                    <span className="font-mono text-zinc-800 dark:text-zinc-100 font-bold group-hover:text-emerald-500">
-                                      {w.address.slice(0, 8)}...{w.address.slice(-6)}
-                                    </span>
+                                    <a
+                                      href={`https://explorer.mantle.xyz/address/${w.address}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="font-mono text-zinc-850 dark:text-zinc-100 font-bold hover:text-emerald-500 hover:underline flex items-center gap-1"
+                                      title="View on Mantle Explorer"
+                                    >
+                                      <span>{w.address.slice(0, 8)}...{w.address.slice(-6)}</span>
+                                      <ExternalLink className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                                    </a>
                                     <button
                                       onClick={(e) => { e.stopPropagation(); handleCopy(w.address); }}
                                       className="w-5 h-5 flex items-center justify-center rounded text-zinc-400 hover:text-emerald-500 hover:bg-[var(--bg-hover)]"
@@ -1424,9 +1163,17 @@ export default function SmartMoneyDashboard() {
                               >
                                 <td className="py-2 px-4 whitespace-nowrap">
                                   <div className="flex items-center gap-2">
-                                    <span className="font-mono text-zinc-850 dark:text-zinc-100 font-bold">
-                                      {w.address.slice(0, 8)}...{w.address.slice(-6)}
-                                    </span>
+                                    <a
+                                      href={`https://explorer.mantle.xyz/address/${w.address}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="font-mono text-zinc-850 dark:text-zinc-100 font-bold hover:text-amber-500 hover:underline flex items-center gap-1"
+                                      title="View on Mantle Explorer"
+                                    >
+                                      <span>{w.address.slice(0, 8)}...{w.address.slice(-6)}</span>
+                                      <ExternalLink className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                                    </a>
                                     <button
                                       onClick={(e) => { e.stopPropagation(); handleCopy(w.address); }}
                                       className="w-5 h-5 flex items-center justify-center rounded text-zinc-400 hover:text-amber-500 hover:bg-[var(--bg-hover)]"
@@ -1490,9 +1237,17 @@ export default function SmartMoneyDashboard() {
                               >
                                 <td className="py-2 px-4 whitespace-nowrap">
                                   <div className="flex items-center gap-2">
-                                    <span className="font-mono text-zinc-850 dark:text-zinc-100 font-bold">
-                                      {w.deployer.slice(0, 8)}...{w.deployer.slice(-6)}
-                                    </span>
+                                    <a
+                                      href={`https://explorer.mantle.xyz/address/${w.deployer}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="font-mono text-zinc-850 dark:text-zinc-100 font-bold hover:text-purple-500 hover:underline flex items-center gap-1"
+                                      title="View on Mantle Explorer"
+                                    >
+                                      <span>{w.deployer.slice(0, 8)}...{w.deployer.slice(-6)}</span>
+                                      <ExternalLink className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                                    </a>
                                     <button
                                       onClick={(e) => { e.stopPropagation(); handleCopy(w.deployer); }}
                                       className="w-5 h-5 flex items-center justify-center rounded text-zinc-400 hover:text-purple-500"
@@ -1502,7 +1257,17 @@ export default function SmartMoneyDashboard() {
                                   </div>
                                 </td>
                                 <td className="py-2 px-4 whitespace-nowrap font-mono text-purple-500 dark:text-purple-400 font-bold">
-                                  {w.contractAddress.slice(0, 10)}...{w.contractAddress.slice(-8)}
+                                  <a
+                                    href={`https://explorer.mantle.xyz/address/${w.contractAddress}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="hover:text-purple-600 dark:hover:text-purple-350 hover:underline flex items-center gap-1"
+                                    title="View Contract on Mantle Explorer"
+                                  >
+                                    <span>{w.contractAddress.slice(0, 10)}...{w.contractAddress.slice(-8)}</span>
+                                    <ExternalLink className="w-3 h-3 text-purple-400 shrink-0" />
+                                  </a>
                                 </td>
                                 <td className="py-2 px-4 text-center font-mono">
                                   #{w.deploymentBlock}
@@ -1522,6 +1287,91 @@ export default function SmartMoneyDashboard() {
                   )}
                 </div>
               )}
+
+              {/* RECENT MOVES (LIVE ACTION FEED LIST VIEW) */}
+              <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl shadow-sm overflow-hidden flex flex-col h-[340px]">
+                <div className="flex items-center justify-between px-4 py-3.5 border-b border-[var(--border)] bg-gray-50 dark:bg-[#121A15]/10 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4.5 h-4.5 text-emerald-500 shrink-0 animate-pulse" />
+                    <h2 className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-zinc-200">
+                      Recent Moves Feed
+                    </h2>
+                  </div>
+                  
+                  <span className="text-[10px] font-mono text-zinc-400">
+                    Manual Refresh
+                  </span>
+                </div>
+
+                <div className="flex-grow overflow-auto p-4 space-y-3 scrollbar-thin">
+                  {recentMoves.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center text-center p-6 text-zinc-400 py-20 border border-dashed border-[var(--border)] rounded-xl">
+                      <Clock className="w-7 h-7 opacity-30 mb-2" />
+                      <span className="text-xs font-semibold">Watching for block transactions...</span>
+                    </div>
+                  ) : (
+                    recentMoves.map((m, i) => {
+                      const pillCls =
+                        m.actionType === "Contract Deployment" ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20" :
+                        m.actionType === "Large Transfer" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border-emerald-500/20" :
+                        "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
+                      
+                      return (
+                        <div
+                          key={i}
+                          onClick={() => handleSelectWallet(m.wallet)}
+                          className="group p-3 bg-[var(--bg-base)] border border-[var(--border)] hover:border-emerald-500/40 rounded-xl transition-all cursor-pointer flex flex-col gap-1.5 relative overflow-hidden"
+                        >
+                          <div className="flex justify-between items-center">
+                            <span className={cn("px-2 py-0.5 rounded text-[9px] font-black border uppercase tracking-wider", pillCls)}>
+                              {m.actionType}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-[10px] font-mono text-[var(--app-muted)] font-bold">
+                                Block #{m.blockNumber}
+                              </span>
+                              {m.id && !m.id.startsWith("hfreq-") && (
+                                <a
+                                  href={`https://explorer.mantle.xyz/tx/${m.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="text-zinc-400 hover:text-emerald-500 p-0.5 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50 rounded inline-flex items-center justify-center"
+                                  title="View Transaction on explorer"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex justify-between items-center text-xs">
+                            <a
+                              href={`https://explorer.mantle.xyz/address/${m.wallet}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="font-mono text-zinc-850 dark:text-zinc-100 font-bold hover:text-emerald-500 hover:underline flex items-center gap-0.5"
+                              title="View Address on explorer"
+                            >
+                              <span>{m.wallet.slice(0, 8)}...{m.wallet.slice(-6)}</span>
+                              <ExternalLink className="w-2.5 h-2.5 text-zinc-400" />
+                            </a>
+                            <span className="font-mono font-black text-zinc-900 dark:text-white">
+                              {m.value}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between items-center text-[10px] text-[var(--app-muted)] font-bold border-t border-[var(--border)]/30 pt-1.5 mt-0.5">
+                            <span>Mantle RPC Log</span>
+                            <span>{m.timestamp}</span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
 
             </div>
 
@@ -1568,6 +1418,35 @@ export default function SmartMoneyDashboard() {
                       >
                         {copiedText.toLowerCase() === selectedWallet.toLowerCase() ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                       </button>
+                    </div>
+
+                    {/* EVM Multichain Holdings Tracker */}
+                    <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-xl p-3 space-y-2">
+                      <div className="flex justify-between items-center pb-1 border-b border-[var(--border)]/60">
+                        <span className="text-[9px] uppercase font-bold text-[var(--app-muted)] tracking-wider">EVM Multichain Holdings</span>
+                        <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-bold uppercase">Scanners V2</span>
+                      </div>
+                      
+                      {loadingMultichain ? (
+                        <div className="flex items-center justify-center py-4 gap-2">
+                          <div className="w-3 h-3 rounded-full border border-emerald-500 border-t-transparent animate-spin" />
+                          <span className="text-[9px] font-mono uppercase text-[var(--app-muted)]">Querying multi-chains...</span>
+                        </div>
+                      ) : selectedWalletMultichainBalances && selectedWalletMultichainBalances.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-1">
+                          {selectedWalletMultichainBalances.map((item, id) => (
+                            <div key={id} className="flex justify-between items-center text-[10.5px] bg-[var(--bg-hover)] px-2.5 py-1.5 rounded-lg border border-[var(--border)]/40 hover:border-emerald-500/20 transition-all select-none">
+                              <span className="font-bold text-zinc-800 dark:text-zinc-200">{item.chainName}</span>
+                              <div className="text-right font-mono">
+                                <span className="font-bold text-zinc-900 dark:text-zinc-100">{item.balance.toLocaleString(undefined, { maximumFractionDigits: 3 })} {item.symbol}</span>
+                                <span className="text-[9px] text-[var(--app-muted)] block font-semibold">${item.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-[9.5px] text-center py-2 text-[var(--app-muted)] font-medium">No external EVM asset holdings found.</div>
+                      )}
                     </div>
 
                     {/* ALWAYS SHOW THE "ANALYZE WALLET WITH AI" TRIGGER */}
@@ -1818,69 +1697,6 @@ export default function SmartMoneyDashboard() {
                 )}
               </div>
 
-              {/* RECENT MOVES (LIVE ACTION FEED LIST VIEW) */}
-              <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl shadow-sm overflow-hidden flex flex-col h-[340px]">
-                <div className="flex items-center justify-between px-4 py-3.5 border-b border-[var(--border)] bg-gray-50 dark:bg-[#121A15]/10 shrink-0">
-                  <div className="flex items-center gap-2">
-                    <Zap className="w-4.5 h-4.5 text-emerald-500 shrink-0 animate-pulse" />
-                    <h2 className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-zinc-200">
-                      Recent Moves Feed
-                    </h2>
-                  </div>
-                  
-                  <span className="text-[10px] font-mono text-zinc-500">
-                    Refresh: {timeLeft}s
-                  </span>
-                </div>
-
-                <div className="flex-grow overflow-auto p-4 space-y-3 scrollbar-thin">
-                  {recentMoves.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center text-center p-6 text-zinc-400 py-20 border border-dashed border-[var(--border)] rounded-xl">
-                      <Clock className="w-7 h-7 opacity-30 mb-2" />
-                      <span className="text-xs font-semibold">Watching for block transactions...</span>
-                    </div>
-                  ) : (
-                    recentMoves.map((m, i) => {
-                      const pillCls =
-                        m.actionType === "Contract Deployment" ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20" :
-                        m.actionType === "Large Transfer" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border-emerald-500/20" :
-                        "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
-                      
-                      return (
-                        <div
-                          key={i}
-                          onClick={() => handleSelectWallet(m.wallet)}
-                          className="group p-3 bg-[var(--bg-base)] border border-[var(--border)] hover:border-emerald-500/40 rounded-xl transition-all cursor-pointer flex flex-col gap-1.5"
-                        >
-                          <div className="flex justify-between items-center">
-                            <span className={cn("px-2 py-0.5 rounded text-[9px] font-black border uppercase tracking-wider", pillCls)}>
-                              {m.actionType}
-                            </span>
-                            <span className="text-[10px] font-mono text-[var(--app-muted)] font-bold">
-                              Block #{m.blockNumber}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="font-mono text-zinc-850 dark:text-zinc-100 font-bold group-hover:text-emerald-500 transition-colors">
-                              {m.wallet.slice(0, 8)}...{m.wallet.slice(-6)}
-                            </span>
-                            <span className="font-mono font-black text-zinc-900 dark:text-white">
-                              {m.value}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between items-center text-[10px] text-[var(--app-muted)] font-bold border-t border-[var(--border)]/30 pt-1.5 mt-0.5">
-                            <span>Mantle RPC Log</span>
-                            <span>{m.timestamp}</span>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-
             </div>
 
           </div>
@@ -1905,6 +1721,156 @@ export default function SmartMoneyDashboard() {
             <CheckCircle2 className="w-4 h-4 shrink-0" />
             <span>{toastMessage}</span>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Anomaly Details Modal */}
+      <AnimatePresence>
+        {selectedAnomaly && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm" id="anomaly-detail-modal">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="w-full max-w-lg bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-2xl flex flex-col relative"
+            >
+              {/* Top Banner (Status Indicator & Exit) */}
+              <div className="flex items-center justify-between p-4 border-b border-[var(--border)] bg-[var(--bg-base)]">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 text-amber-500 animate-pulse" />
+                  <span className="text-[10px] font-black uppercase text-zinc-900 dark:text-zinc-200 font-mono tracking-wider">
+                    AI Guardian SecOps Audit
+                  </span>
+                </div>
+                <button
+                  onClick={() => setSelectedAnomaly(null)}
+                  className="p-1 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors text-zinc-500 hover:text-zinc-800 dark:hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Main Contents scrollable */}
+              <div className="p-6 overflow-y-auto max-h-[75vh] flex flex-col gap-5">
+                {/* Title & Anomaly Type Header */}
+                <div className="flex justify-between items-start gap-3">
+                  <div className="space-y-1">
+                    <span className={cn(
+                      "text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border leading-none inline-block",
+                      (selectedAnomaly.severity >= 90 || selectedAnomaly.severity === "Critical") ? "bg-red-500/10 text-red-500 border-red-500/20" :
+                      (selectedAnomaly.severity >= 80 || selectedAnomaly.severity === "High") ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
+                      "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/15"
+                    )}>
+                      {selectedAnomaly.severity || 80} Severity Meter
+                    </span>
+                    <h2 className="text-sm font-black uppercase font-mono text-zinc-900 dark:text-white mt-1">
+                      {selectedAnomaly.anomalyType || selectedAnomaly.type || "BEHAVIORAL OUTLIER"}
+                    </h2>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <span className="text-2xl font-black font-mono text-zinc-900 dark:text-white leading-none block">
+                      {selectedAnomaly.severity || 85}
+                    </span>
+                    <span className="text-[8px] text-[var(--app-muted)] uppercase font-black">Score Rating</span>
+                  </div>
+                </div>
+
+                {/* Narrative Details */}
+                <div className="bg-[var(--bg-base)] border border-[var(--border)] rounded-xl p-4 space-y-2">
+                  <span className="text-[10px] font-black text-[var(--app-muted)] uppercase block border-b border-[var(--border)] pb-1.5">
+                    Detection Narrative
+                  </span>
+                  <p className="text-xs text-zinc-800 dark:text-zinc-300 font-semibold leading-relaxed">
+                    {selectedAnomaly.description || selectedAnomaly.reason || "Under observation by Mantle core blockchain validators."}
+                  </p>
+                </div>
+
+                {/* Meta Attributes Table */}
+                <div className="border border-[var(--border)] rounded-xl divide-y divide-[var(--border)] text-xs font-mono">
+                  {/* Target Wallet */}
+                  <div className="p-3 flex justify-between items-center bg-[var(--bg-base)]/40">
+                    <span className="text-[10px] uppercase font-bold text-[var(--app-muted)]">Target Wallet</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                        {selectedAnomaly.wallet.slice(0, 10)}...{selectedAnomaly.wallet.slice(-8)}
+                      </span>
+                      <button
+                        onClick={() => handleCopy(selectedAnomaly.wallet)}
+                        className="text-zinc-400 hover:text-emerald-500 p-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded transition-colors"
+                        title="Copy Wallet Address"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Block Number */}
+                  <div className="p-3 flex justify-between items-center bg-[var(--bg-base)]/10">
+                    <span className="text-[10px] uppercase font-bold text-[var(--app-muted)]">Block Height</span>
+                    <span className="font-semibold text-zinc-900 dark:text-white">
+                      #{selectedAnomaly.blockNumber || "In-Memory Mempool"}
+                    </span>
+                  </div>
+
+                  {/* Transaction Hash */}
+                  <div className="p-3 flex justify-between items-center bg-[var(--bg-base)]/40">
+                    <span className="text-[10px] uppercase font-bold text-[var(--app-muted)]">Transaction Hash</span>
+                    {selectedAnomaly.txHash ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-zinc-700 dark:text-zinc-300">
+                          {selectedAnomaly.txHash.slice(0, 8)}...{selectedAnomaly.txHash.slice(-6)}
+                        </span>
+                        <a
+                          href={`https://explorer.mantle.xyz/tx/${selectedAnomaly.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-zinc-400 hover:text-emerald-500 p-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded transition"
+                          title="View on Mantle Explorer"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    ) : (
+                      <span className="text-zinc-500 italic">Confirmed State On-Chain</span>
+                    )}
+                  </div>
+
+                  {/* Cryptographic Content Hash */}
+                  <div className="p-3 flex flex-col gap-1.5 bg-[var(--bg-base)]/10">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] uppercase font-bold text-[var(--app-muted)]">IPFS Content Hash (On-Chain Reference)</span>
+                    </div>
+                    <span className="text-[9px] text-zinc-500 font-semibold break-all bg-zinc-100 dark:bg-zinc-900 p-2 rounded border border-[var(--border)] leading-tight">
+                      {selectedAnomaly.contentHash || "0xefd8a2...[Auto Generated Proof of Concept]"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Modal CTA Options */}
+                <div className="flex flex-col sm:flex-row gap-2.5 mt-2">
+                  <a
+                    href={`/replay-v2?wallet=${selectedAnomaly.wallet}&type=${selectedAnomaly.anomalyType || selectedAnomaly.type || "buy"}`}
+                    className="flex-1 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 font-bold uppercase text-xs text-black font-mono rounded-xl shadow-lg border border-amber-500/10 text-center transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <RefreshCw className="w-4 h-4 text-black animate-spin" />
+                    <span>Initiate AI Replay Simulation</span>
+                  </a>
+
+                  <button
+                    onClick={() => {
+                      handleSelectWallet(selectedAnomaly.wallet);
+                      setSelectedAnomaly(null);
+                    }}
+                    className="flex-1 px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 font-bold uppercase text-xs text-zinc-800 dark:text-white rounded-xl text-center border border-[var(--border)] transition-all flex items-center justify-center gap-1"
+                  >
+                    <span>View Cluster Profile</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

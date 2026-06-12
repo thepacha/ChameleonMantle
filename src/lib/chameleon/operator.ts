@@ -26,7 +26,7 @@ export class ChameleonOperator {
   constructor() {
     const rpcUrl = process.env.MANTLE_RPC_URL || "https://rpc.mantle.xyz";
     const privateKey = process.env.CHAMELEON_OPERATOR_PRIVATE_KEY;
-    const contractAddress = process.env.CHAMELEON_CONTRACT_ADDRESS;
+    const contractAddress = process.env.CHAMELEON_CONTRACT_ADDRESS || "0xE495f3dD4d7DC3A7D980421569b4775458F4CfD0";
 
     if (!privateKey) {
       throw new Error("CHAMELEON_OPERATOR_PRIVATE_KEY is not defined in environment variables");

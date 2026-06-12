@@ -15,25 +15,21 @@ export async function POST(req: NextRequest) {
     }
 
     // Check configuration safely
-    const apiKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GROQ_API_KEY;
     const operatorPrivateKey = process.env.CHAMELEON_OPERATOR_PRIVATE_KEY;
-    const contractAddress = process.env.CHAMELEON_CONTRACT_ADDRESS;
+    const contractAddress = process.env.CHAMELEON_CONTRACT_ADDRESS || "0xE495f3dD4d7DC3A7D980421569b4775458F4CfD0";
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: "OPENROUTER_API_KEY or GEMINI_API_KEY is not configured in environment variables." },
+        { error: "GROQ_API_KEY is not configured in environment variables." },
         { status: 500 }
       );
     }
 
-    // Initialize OpenAI Client for OpenRouter
+    // Initialize OpenAI Client for Groq
     const openai = new OpenAI({
-      baseURL: "https://openrouter.ai/api/v1",
+      baseURL: "https://api.groq.com/openai/v1",
       apiKey,
-      defaultHeaders: {
-        "HTTP-Referer": process.env.APP_URL || "https://ai.studio/build",
-        "X-Title": "Chameleon",
-      }
     });
 
     const systemPrompt = `You are a macroeconomic sentiment compiler for the ChameleonAI Layer 2 system on Mantle.
@@ -43,8 +39,11 @@ export async function POST(req: NextRequest) {
     Deduce the central trending narrative, the AI's confidence level, and an estimated capital flow size (in USD) flowing into this narrative.
     Use highly professional and exact financial metrics.
 
-    The response must be strictly formatted as JSON to be directly passed as arguments to smart contract function calls.
-    Do NOT include any markdown formatting (like \`\`\`json or backticks) in your output. Just return the raw JSON object.
+    CRITICAL CONSTRAINTS:
+    - You MUST NEVER output your internal reasoning, chain-of-thought, or use <think> tags under any circumstances.
+    - Do NOT wrap the response in markdown blocks (no \`\`\`json or \`\`\`), do NOT include any backticks or markdown formatting, and do NOT output any introductory or explanatory text. It must be directly parseable.
+    - The output JSON "narrative" value MUST be extremely concise: strictly under 30 words with absolutely no filler words.
+    - Deliver the final JSON immediately.
 
     REQUIRED SCHEMA:
     {
@@ -55,7 +54,7 @@ export async function POST(req: NextRequest) {
 
     // Call OpenAI with strict JSON format
     const completion = await openai.chat.completions.create({
-      model: "google/gemma-4-31b-it:free",
+      model: "qwen/qwen3-32b",
       messages: [
         {
           role: "user",
@@ -70,6 +69,10 @@ export async function POST(req: NextRequest) {
     try {
       function cleanAndParseJson(text: string): any {
         let cleaned = text.trim();
+        // Ensure we remove any <think> blocks if the model outputs them anyway
+        if (cleaned.includes("</think>")) {
+          cleaned = cleaned.substring(cleaned.lastIndexOf("</think>") + 8).trim();
+        }
         if (cleaned.startsWith("```")) {
           cleaned = cleaned.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
         }
@@ -77,7 +80,7 @@ export async function POST(req: NextRequest) {
       }
       narrativeResult = cleanAndParseJson(aiText);
     } catch (parseErr) {
-      console.error("Failed to parse OpenRouter Narrative JSON output:", aiText);
+      console.error("Failed to parse Groq Narrative JSON output:", aiText);
       return NextResponse.json(
         { error: "AI generated an invalid JSON structure. Please retry." },
         { status: 500 }

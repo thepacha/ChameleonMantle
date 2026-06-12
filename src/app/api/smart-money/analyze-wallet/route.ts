@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { OpenAI } from "openai";
+import { GoogleGenAI } from "@google/genai";
 import { 
   getMNTBalance, 
-  getProvider 
+  getProvider,
+  getMantleAddressBalances,
+  getMantleTokenTransfers,
+  getMultichainBalances
 } from "@/src/lib/mantle";
 import { 
   getScannedWhales, 
@@ -94,6 +98,25 @@ function getFallbackProfile(address: string, balance: number, isDeployer: boolea
   };
 }
 
+// Lazy initialization of GoogleGenAI API
+let geminiClient: GoogleGenAI | null = null;
+function getGeminiClient(): GoogleGenAI | null {
+  if (!geminiClient) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (apiKey) {
+      geminiClient = new GoogleGenAI({
+        apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          }
+        }
+      });
+    }
+  }
+  return geminiClient;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { address } = await req.json();
@@ -105,12 +128,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Retrieve active on-chain statistics
+    // Retrieve ALL actual, real-time on-chain statistics in parallel
     let balance = 0;
+    let mantleBalances: any[] = [];
+    let multichainBalances: any[] = [];
+    let transfers: any[] = [];
+
     try {
-      balance = await getMNTBalance(address);
+      const [balResult, mntBalResult, multiBalResult, transfersResult] = await Promise.all([
+        getMNTBalance(address).catch((e) => { console.warn("MNT balance error in analysis:", e); return 0; }),
+        getMantleAddressBalances(address).catch((e) => { console.warn("Mantle balances error in analysis:", e); return []; }),
+        getMultichainBalances(address).catch((e) => { console.warn("Multichain balances error in analysis:", e); return []; }),
+        getMantleTokenTransfers(address).catch((e) => { console.warn("Transfers error in analysis:", e); return { data: [] }; })
+      ]);
+      balance = balResult;
+      mantleBalances = mntBalResult;
+      multichainBalances = multiBalResult;
+      transfers = transfersResult.data || [];
     } catch (e) {
-      console.warn("RPC fetch failed, fallback balance to 0", e);
+      console.warn("On-chain parallel fetch failed:", e);
     }
 
     // Check pre-computed sets in scanner memory
@@ -126,27 +162,6 @@ export async function POST(req: NextRequest) {
     const convictionScore = conviction.convictionScore;
     const convictionLevel = conviction.convictionLevel;
 
-    const apiKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY || "";
-    if (!apiKey) {
-      // Return beautiful fully-populated on-chain fallback
-      const fallback = getFallbackProfile(address, balance, isDeployer, isEarlyAdopter, convictionScore, convictionLevel);
-      return NextResponse.json({
-        success: true,
-        isFallback: true,
-        data: fallback
-      });
-    }
-
-    // Initialize OpenAI Client for OpenRouter
-    const openai = new OpenAI({
-      baseURL: "https://openrouter.ai/api/v1",
-      apiKey,
-      defaultHeaders: {
-        "HTTP-Referer": process.env.APP_URL || "https://ai.studio/build",
-        "X-Title": "Chameleon",
-      }
-    });
-
     const prompt = `You are an elite artificial intelligence on-chain forensics analyst auditing the Mantle Layer 2 Network.
     Analyze the following forensic transaction payload for the address: ${address}
     
@@ -159,13 +174,27 @@ export async function POST(req: NextRequest) {
     - Computed On-Chain Conviction Score: ${convictionScore}
     - Computed Conviction Level: ${convictionLevel}
     
+    REAL ON-CHAIN BALANCES RETRIEVED (MANTLE):
+    ${JSON.stringify(mantleBalances.map(b => ({ symbol: b.token_symbol, name: b.token_name, amount: b.token_amount, valueUsd: b.value_usd, sectors: b.token_sectors })), null, 2)}
+
+    REAL MULTICHAIN BALANCES RETRIEVED (EVM):
+    ${JSON.stringify(multichainBalances.map(b => ({ chain: b.chainName, symbol: b.symbol, balance: b.balance, valueUsd: b.valueUsd })), null, 2)}
+
+    REAL RECENT TRANSACTIONS RETRIEVED (MANTLE):
+    ${JSON.stringify(transfers.slice(0, 10).map(tx => ({ timestamp: tx.block_timestamp, token: tx.token_bought_symbol, valueUsd: tx.trade_value_usd, action: tx.trader_address.toLowerCase() === address.toLowerCase() ? "SELL/TRANSFER-OUT" : "BUY/TRANSFER-IN" })), null, 2)}
+    
     TASK:
     Generate a highly accurate, fully-formed wallet intelligence profile in strictly valid JSON format.
     Provide realistic classification names, confidence ratings, and similarities using active Mantle indicators. Combine logic metrics to predict behavior patterns exactly.
     Do not use generic filler. Show elite blockchain literacy and use phrases like: "liquidity range", "LP concentration", "MEV frontrun", "yield optimizers", "slippage tolerance".
     
-    The response must be strictly formatted as JSON to be directly passed as arguments to smart contract function calls.
-    Do NOT include any markdown formatting (like \`\`\`json or backticks) in your output. Just return the raw JSON object.
+    CRITICAL CONSTRAINTS:
+    - You MUST NEVER output your internal reasoning, chain-of-thought, or use <think> tags under any circumstances.
+    - Do NOT wrap the response in markdown blocks (no \`\`\`json or \`\`\`), do NOT include any backticks or markdown formatting, and do NOT output any introductory or explanatory text. It must be directly parseable.
+    - All text explanation fields in the output JSON ("classificationReason", "convictionExplanation", "summary", "patternExplanation", "riskReason") MUST be extremely concise: strictly 2 short sentences maximum.
+    - Total length of any text explanation field must not exceed 30 words.
+    - Be punchy, direct, and focus ONLY on the core metrics (Win Rate, PnL, Hold Time, Conviction Score) without any fluff, storytelling, or filler words.
+    - Deliver the final JSON immediately.
 
     REQUIRED SCHEMA:
     {
@@ -190,21 +219,79 @@ export async function POST(req: NextRequest) {
       ]
     }`;
 
-    const completion = await openai.chat.completions.create({
-      model: "google/gemma-4-31b-it:free",
-      messages: [
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      response_format: { type: "json_object" }
-    });
+    let completionText = "";
+    let aiMethodUsed = "none";
 
-    const completionText = completion.choices[0]?.message?.content || "{}";
-    
+    // 1. Try Gemini first as priority framework API
+    const gemini = getGeminiClient();
+    if (gemini) {
+      try {
+        const response = await gemini.models.generateContent({
+          model: "gemini-3.5-flash",
+          contents: prompt,
+          config: {
+            responseMimeType: "application/json",
+          }
+        });
+        const textResult = response.text || "";
+        if (textResult) {
+          completionText = textResult;
+          aiMethodUsed = "gemini";
+        }
+      } catch (e) {
+        console.error("Gemini analyze-wallet generation failed:", e);
+      }
+    }
+
+    // 2. Fallback to Groq
+    if (!completionText) {
+      const groqApiKey = process.env.GROQ_API_KEY || "";
+      if (groqApiKey) {
+        try {
+          const openai = new OpenAI({
+            baseURL: "https://api.groq.com/openai/v1",
+            apiKey: groqApiKey,
+          });
+          const completion = await openai.chat.completions.create({
+            model: "qwen/qwen3-32b",
+            messages: [
+              {
+                role: "user",
+                content: prompt
+              }
+            ],
+            response_format: { type: "json_object" }
+          });
+          completionText = completion.choices[0]?.message?.content || "";
+          if (completionText) {
+            aiMethodUsed = "groq";
+          }
+        } catch (e) {
+          console.error("Groq analyze-wallet generation failed:", e);
+        }
+      }
+    }
+
+    if (!completionText) {
+      // Return beautiful fully-populated on-chain fallback if all AI clients are missing or failed
+      const fallback = getFallbackProfile(address, balance, isDeployer, isEarlyAdopter, convictionScore, convictionLevel);
+      return NextResponse.json({
+        success: true,
+        isFallback: true,
+        data: fallback
+      });
+    }
+
     function cleanAndParseJson(text: string): any {
       let cleaned = text.trim();
+      
+      // Comprehensively strip any <think>...</think> blocks
+      cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>/gi, "");
+      cleaned = cleaned.replace(/<think>[\s\S]*$/gi, ""); // hanging think block
+      cleaned = cleaned.replace(/<\/think>/gi, "");
+      
+      cleaned = cleaned.trim();
+      
       if (cleaned.startsWith("```")) {
         cleaned = cleaned.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
       }
@@ -216,6 +303,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       isFallback: false,
+      aiMethodUsed,
       data: parsedData
     });
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getMantleAddressBalances, getMantleTokenTransfers } from '@/src/lib/mantle';
+import { getMantleAddressBalances, getMantleTokenTransfers, getMultichainBalances } from '@/src/lib/mantle';
 
 export async function GET(req: NextRequest) {
   try {
@@ -16,15 +16,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid Ethereum/Mantle address format' }, { status: 400 });
     }
 
-    // Fetch on-chain balances and transaction history in parallel
-    const [balances, transfersResult] = await Promise.all([
+    // Fetch on-chain balances, transaction history, and multichain native balances in parallel
+    const [balances, transfersResult, multichainBalances] = await Promise.all([
       getMantleAddressBalances(cleanAddress),
-      getMantleTokenTransfers(cleanAddress)
+      getMantleTokenTransfers(cleanAddress),
+      getMultichainBalances(cleanAddress)
     ]);
 
     return NextResponse.json({
       balances,
       transfers: transfersResult.data || [],
+      multichainBalances,
       error: transfersResult.error || null,
       warning: transfersResult.warning || null
     });

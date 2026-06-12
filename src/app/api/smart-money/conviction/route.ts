@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { triggerScan, getWalletConviction } from '@/src/lib/smart-money-scanner';
+import { triggerScan, getWalletConviction, getScannedBlocksCount } from '@/src/lib/smart-money-scanner';
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,8 +13,11 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Ensure state is updated
-    await triggerScan();
+    // Smart rate limiting: Only trigger on-chain scan if scanner is unhydrated.
+    // This allows instantaneous wallet changes/selections under 1ms instead of blocking on 500 block scans.
+    if (getScannedBlocksCount() === 0) {
+      await triggerScan();
+    }
 
     const conviction = getWalletConviction(address);
 

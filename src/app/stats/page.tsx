@@ -32,16 +32,14 @@ import {
   FileCode,
   Terminal,
   Cpu,
-  Database
+  Database,
+  Award
 } from 'lucide-react';
 import { Header } from '@/src/components/Header';
 import { ChameleonLogo } from '@/src/components/ChameleonLogo';
 import { 
-  ScatterChart, 
-  Scatter, 
   XAxis, 
   YAxis, 
-  ZAxis, 
   Tooltip as RechartsTooltip, 
   ResponsiveContainer,
   LineChart,
@@ -54,6 +52,7 @@ import {
   Bar
 } from 'recharts';
 import { cn, formatCurrency, formatNumber } from '@/src/lib/utils';
+import { getPlatformUsage, savePlatformUsage, PlatformUsage } from '@/src/lib/usage';
 import Link from 'next/link';
 
 // Detailed signal database for the stats page
@@ -494,6 +493,7 @@ const ON_CHAIN_WRITES_DATABASE: OnChainWrite[] = [
 
 export default function AlphaStatsPage() {
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [platformUsage, setPlatformUsage] = useState<PlatformUsage | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('ALL');
@@ -515,7 +515,7 @@ export default function AlphaStatsPage() {
   const [copiedTx, setCopiedTx] = useState<string | null>(null);
 
   // Hardcoded real-looking contract details
-  const contractAddress = "0xbA53CDeA016cfEea64Ff47F379dBBe9Cc8E8FA2e";
+  const contractAddress = process.env.NEXT_PUBLIC_CHAMELEON_CONTRACT_ADDRESS || "0xE495f3dD4d7DC3A7D980421569b4775458F4CfD0";
   const deploymentDate = "May 12, 2026, 14:22:08 UTC";
 
   const handleCopyAddress = () => {
@@ -657,7 +657,19 @@ export default function AlphaStatsPage() {
 
   // Filter & sort log writes
   const filteredOnChainWrites = useMemo(() => {
-    return ON_CHAIN_WRITES_DATABASE.filter(write => {
+    const userWritesMapped = (platformUsage?.writes || []).map(w => ({
+      id: w.id,
+      timestamp: w.timestamp.replace('T', ' ').substring(0, 19),
+      relativeTime: w.relativeTime,
+      functionName: w.functionCalled,
+      payloadSummary: w.dataSummary,
+      blockNumber: w.blockNumber,
+      txHash: w.txHash,
+      gasUsed: w.gasUsed
+    }));
+    const combinedWrites = [...userWritesMapped, ...ON_CHAIN_WRITES_DATABASE];
+
+    return combinedWrites.filter(write => {
       const matchesSearch = write.payloadSummary.toLowerCase().includes(onChainSearch.toLowerCase()) ||
                             write.txHash.toLowerCase().includes(onChainSearch.toLowerCase()) ||
                             write.functionName.toLowerCase().includes(onChainSearch.toLowerCase());
@@ -678,7 +690,7 @@ export default function AlphaStatsPage() {
       if (aVal > bVal) return writeSortDirection === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [onChainSearch, onChainTypeFilter, writeSortField, writeSortDirection]);
+  }, [onChainSearch, onChainTypeFilter, writeSortField, writeSortDirection, platformUsage]);
 
   // Generate 30D stacked write counts matching local environment time
   const ON_CHAIN_WRITES_30D = useMemo(() => {
@@ -719,6 +731,11 @@ export default function AlphaStatsPage() {
 
   useEffect(() => {
     setIsClient(true);
+    try {
+      setPlatformUsage(getPlatformUsage());
+    } catch (e) {
+      console.error(e);
+    }
     const storedTheme = typeof window !== 'undefined' ? localStorage.getItem('theme') : null;
     if (storedTheme === 'dark') {
       setIsDarkMode(true);
@@ -743,7 +760,24 @@ export default function AlphaStatsPage() {
 
   // Sort and Filter logic
   const filteredSignals = useMemo(() => {
-    return HISTORICAL_PERFORMANCE_SIGNALS.filter(sig => {
+    const userSignalsMapped = (platformUsage?.signals || []).map(u => ({
+      id: u.id,
+      date: u.timestamp.replace('T', ' ').substring(0, 16),
+      type: u.type.toUpperCase().replace(' ', '_'),
+      typeName: u.type,
+      token: u.token,
+      confidence: u.confidence,
+      direction: (u.predicted === 'Bullish' ? 'LONG' : 'SHORT') as 'LONG' | 'SHORT',
+      outcome: (u.status === 'Hit' ? 'Hit' : 'Miss') as 'Hit' | 'Miss',
+      roi: u.pnl,
+      dnaType: u.walletDna as any,
+      zScore: Number((u.confidence / 20).toFixed(2)),
+      volumeUsd: '$480k'
+    }));
+
+    const combinedSignals = [...userSignalsMapped, ...HISTORICAL_PERFORMANCE_SIGNALS];
+
+    return combinedSignals.filter(sig => {
       const matchesSearch = sig.token.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             sig.typeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             sig.dnaType.toLowerCase().includes(searchQuery.toLowerCase());
@@ -765,7 +799,7 @@ export default function AlphaStatsPage() {
       if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [searchQuery, typeFilter, outcomeFilter, sortField, sortDirection]);
+  }, [searchQuery, typeFilter, outcomeFilter, sortField, sortDirection, platformUsage]);
 
   const handleSort = (field: keyof PerformanceSignal) => {
     if (sortField === field) {
@@ -778,7 +812,7 @@ export default function AlphaStatsPage() {
 
   // Sourced signal stats computed
   const systemAccuracy = 84.6;
-  const totalSignals = 1420;
+  const totalSignals = 1420 + (platformUsage?.signalsCount || 0);
   const averageRoiValue = 14.2;
   const outperformanceVsMnt = 24.1; // +31% vs +4% MNT
   const bestSignalResult = { roi: 240.0, token: 'MEME', wallet: 'Ape Fund ID: 0xaa2' };
@@ -935,139 +969,11 @@ export default function AlphaStatsPage() {
         </div>
       </section>
 
-      {/* 2 & 3. TWO COLUMN VISUALIZATIONS SECTION: Scatter Plot & Accuracy Index */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+      {/* 2. PRECISION VISUALIZATION SECTION: Accuracy Index */}
+      <section className="grid grid-cols-1 gap-6 items-stretch">
         
-        {/* PANEL: Confidence vs ROI Scatter Plot (Colspan-7) */}
-        <div className="lg:col-span-7 bento-card p-6 flex flex-col justify-between bg-app-card/30 backdrop-blur-sm min-h-[420px]" id="scatter-plot-panel">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <SlidersHorizontal className="w-4 h-4 text-app-emerald" />
-              <h2 className="text-xs font-bold text-app-fg uppercase tracking-wider">Confidence vs. Resulting ROI Correlation</h2>
-            </div>
-            <p className="text-[11px] text-app-zinc-text leading-relaxed">
-              Every dot is a signal fired. Higher confidence values correspond strongly to asymmetric positive peak yields, demonstrating algorithmic intelligence precision.
-            </p>
-          </div>
-
-          {/* Scatter Plot Container */}
-          <div className="flex-grow w-full h-[280px] min-h-[250px] mt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: -20 }}>
-                <CartesianGrid strokeDasharray="3 3.5" vertical={true} stroke={isDarkMode ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)"} />
-                <XAxis 
-                  type="number" 
-                  dataKey="confidence" 
-                  name="Confidence Score" 
-                  unit="%" 
-                  domain={[60, 100]}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: isDarkMode ? '#8fa396' : '#6b7280', fontSize: 10, fontWeight: 500 }}
-                />
-                <YAxis 
-                  type="number" 
-                  dataKey="roi" 
-                  name="Resulting ROI" 
-                  unit="%" 
-                  domain={[-20, 100]} // truncated upper for viewability, 240.0% is off-scale but shown below as detail
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: isDarkMode ? '#8fa396' : '#6b7280', fontSize: 10, fontWeight: 500 }}
-                />
-                <RechartsTooltip 
-                  cursor={{ strokeDasharray: '3 3' }}
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload as PerformanceSignal;
-                      const isHit = data.outcome === 'Hit';
-                      return (
-                        <div className="bg-app-card/95 border border-app-border p-3.5 rounded-xl shadow-xl space-y-2.5 max-w-[240px] font-sans text-xs">
-                          <div className="flex items-center justify-between border-b border-app-border/50 pb-1.5 gap-3">
-                            <span className="font-extrabold text-app-fg uppercase tracking-wider font-mono">
-                              {data.token} {data.direction}
-                            </span>
-                            <span className={cn(
-                              "text-[9px] font-black font-semibold px-2 py-0.5 rounded uppercase leading-none font-sans",
-                              isHit ? "bg-app-emerald/10 text-app-emerald border border-app-emerald/20" : "bg-red-500/10 text-red-500 border-red-500/20"
-                            )}>
-                              {data.outcome}
-                            </span>
-                          </div>
-                          <div className="space-y-1.5 font-mono text-[11px] leading-relaxed">
-                            <div className="flex justify-between">
-                              <span className="text-app-zinc-text font-semibold uppercase">Confidence:</span>
-                              <span className="text-app-fg font-black">{data.confidence}%</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-app-zinc-text font-semibold uppercase">Resulting ROI:</span>
-                              <span className={cn("font-black font-bold", data.roi >= 0 ? "text-app-emerald" : "text-red-500")}>
-                                {data.roi >= 0 ? `+${data.roi}%` : `${data.roi}%`}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-app-zinc-text font-semibold uppercase">Sourced Wallet:</span>
-                              <span className="text-indigo-500 font-bold">{data.dnaType}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-app-zinc-text font-semibold uppercase">Score Intensity:</span>
-                              <span className="text-amber-500 font-bold">{data.zScore.toFixed(2)} SD</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Scatter 
-                  name="Chameleon Alpha Signals" 
-                  data={HISTORICAL_PERFORMANCE_SIGNALS} 
-                  fill={isDarkMode ? "#10b981" : "#00875a"}
-                  shape={(props: any) => {
-                    const { cx, cy, payload } = props;
-                    const roi = payload.roi;
-                    const isMemeExtra = roi > 100;
-                    // Standard color map inside scatter
-                    let color = isDarkMode ? "#10b981" : "#00875a"; // hit color
-                    if (payload.outcome === 'Miss') {
-                      color = isDarkMode ? "#f43f5e" : "#be123c"; // miss color
-                    } else if (payload.confidence > 92 && roi > 15) {
-                      color = isDarkMode ? "#a855f7" : "#7e22ce"; // extra alpha purple
-                    }
-                    return (
-                      <circle 
-                        cx={cx} 
-                        cy={cy} 
-                        r={isMemeExtra ? 9 : payload.confidence > 90 ? 7 : 5} 
-                        fill={color} 
-                        fillOpacity={0.8}
-                        stroke={isDarkMode ? "#161b22" : "#ffffff"} 
-                        strokeWidth={1}
-                        className="transition-all duration-300 hover:scale-150 hover:fill-amber-500 cursor-pointer"
-                      />
-                    );
-                  }}
-                />
-              </ScatterChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-4 mt-2 mb-1 text-[10px] font-mono text-app-zinc-text border-t border-app-border/40 pt-3 select-none">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-app-emerald" /> Core Algorithm Hit
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Margin Deviation Cut (Miss)
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-purple-500" /> Premium Confidence Alpha (&gt;92% Conf, &gt;15% ROI)
-            </span>
-          </div>
-        </div>
-
-        {/* PANEL: Accuracy Over Time (Colspan-5) */}
-        <div className="lg:col-span-5 bento-card p-6 flex flex-col justify-between bg-app-card/30 backdrop-blur-sm min-h-[420px]" id="accuracy-over-time-panel">
+        {/* PANEL: Accuracy Over Time (Full-Width) */}
+        <div className="bento-card p-6 flex flex-col justify-between bg-app-card/30 backdrop-blur-sm min-h-[420px]" id="accuracy-over-time-panel">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Target className="w-4 h-4 text-app-emerald" />
